@@ -5,8 +5,7 @@ const parkingAreaSchema = new mongoose.Schema({
   ownerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   name: { type: String, required: true },
   totalSlots: { type: Number, required: true },
-  isVIPMap: { type: Boolean, default: false }, // if true, custom image/map view
-  image: String // map image URL or preview
-}, { timestamps: true })
+  image: String 
+})
 
 export default mongoose.model('ParkingArea', parkingAreaSchema)

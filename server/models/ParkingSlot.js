@@ -5,7 +5,7 @@ const slotSchema = new mongoose.Schema({
   slotNumber: { type: String, required: true },
   isAvailable: { type: Boolean, default: true },
   bookedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-  bookingTime: Date
-}, { timestamps: true })
+  bookingTime: {type: Date, default: null },
+})
 
 export default mongoose.model('ParkingSlot', slotSchema)

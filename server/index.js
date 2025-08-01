@@ -3,21 +3,24 @@ import mongoose from 'mongoose'
 import cors from 'cors'
 import dotenv from 'dotenv'
 import authRoutes from './routes/authRoutes.js'
-import locationRoutes from './routes/locationRoutes.js'
-import areaRoutes from './routes/areaRoutes.js'
-import slotRoutes from './routes/slotRoutes.js'
+import { initScheduledJobs } from './services/cronJobs.js';
 import bookingRoutes from './routes/bookingRoutes.js'
+import parkingRoutes from './routes/parkingRoutes.js'
+import userRoutes from './routes/userRoutes.js'
+import profileRoutes from './routes/profileRoutes.js'
+
 
 dotenv.config()
 const app = express()
+initScheduledJobs();
 
 app.use(cors())
 app.use(express.json())
 app.use('/api/auth', authRoutes)
-app.use('/api/locations', locationRoutes)
-app.use('/api/areas', areaRoutes)
-app.use('/api/slots', slotRoutes)
-app.use('/api/bookings', bookingRoutes)
+app.use('/api/bookings', bookingRoutes) 
+app.use('/api/slots', parkingRoutes) 
+app.use('/user-service', userRoutes)
+app.use('/api/profile', profileRoutes)
 
 app.get('/', (req, res) => {
   res.send('Parkezy Backend Running')

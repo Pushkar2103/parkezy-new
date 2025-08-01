@@ -1,11 +1,19 @@
-import express from 'express'
-import { createBooking, cancelBooking, getAvailableSlots, getSlotAvailability } from '../controllers/bookingController.js'
+import express from 'express';
+import {
+  requestCancellation,
+  getCancellationRequests,
+  respondToCancellation
+} from '../controllers/bookingController.js';
+import { auth, userAuth } from '../middleware/auth.js';
+import { ownerAuth } from '../middleware/authMiddleware.js';
 
-const router = express.Router()
+const router = express.Router();
 
-router.post('/', createBooking)
-router.delete('/:id', cancelBooking)
-router.get('/available', getAvailableSlots);
-router.get('/availability/:slotId', getSlotAvailability);
+router.put('/:id/request-cancellation', auth, userAuth, requestCancellation);
 
-export default router
+router.get('/owner/cancellation-requests', ownerAuth, getCancellationRequests);
+
+router.put('/:id/respond-cancellation', ownerAuth, respondToCancellation);
+
+
+export default router;

@@ -1,120 +1,113 @@
 import Booking from '../models/Booking.js';
 import ParkingSlot from '../models/ParkingSlot.js';
+import ParkingArea from '../models/ParkingArea.js';
+import mongoose from 'mongoose';
 
-export const createBooking = async (req, res) => {
+// User requests to cancel a booking
+export const requestCancellation = async (req, res) => {
+  const { id } = req.params; // Booking ID
+  const userId = req.user._id;
+
   try {
-    const { userName, carNumber, parkingSlot, startTime, endTime } = req.body;
+    const booking = await Booking.findById(id);
 
-    if (!userName || !carNumber || !parkingSlot || !startTime || !endTime) {
-      return res.status(400).json({ message: 'All fields are required' });
+    if (!booking) {
+      return res.status(404).json({ message: 'Booking not found' });
     }
 
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-
-    if (start >= end) {
-      return res.status(400).json({ message: 'End time must be after start time' });
+    if (booking.userId.toString() !== userId.toString()) {
+      return res.status(403).json({ message: 'You are not authorized to cancel this booking' });
     }
 
-    // Check for overlapping bookings
-    const existing = await Booking.findOne({
-      parkingSlot,
-      isActive: true,
-      $or: [
-        { startTime: { $lt: end }, endTime: { $gt: start } }
-      ]
-    });
-
-    if (existing) {
-      return res.status(409).json({ message: 'Slot is already booked for the selected time' });
+    if (new Date() >= new Date(booking.startTime)) {
+        return res.status(400).json({ message: 'Cannot request cancellation for a booking that has already started' });
+    }
+    
+    if (booking.status !== 'booked') {
+        return res.status(400).json({ message: `Cannot request cancellation for a booking with status: ${booking.status}` });
     }
 
-    const booking = new Booking({
-      userName,
-      carNumber,
-      parkingSlot,
-      startTime,
-      endTime
-    });
-
+    booking.status = 'cancellation_requested';
     await booking.save();
 
-    return res.status(201).json({ message: 'Booking created successfully', booking });
-
+    res.status(200).json({ message: 'Cancellation request sent successfully. Awaiting owner approval.', booking });
   } catch (error) {
-    console.error(error);
-    return res.status(500).json({ message: 'Server error' });
+    res.status(500).json({ message: 'Server error while requesting cancellation', error: error.message });
   }
 };
 
+// Owner gets all cancellation requests for their parking areas
+export const getCancellationRequests = async (req, res) => {
+    const ownerId = req.user._id;
 
-export const cancelBooking = async (req, res) => {
-  try {
-    const bookingId = req.params.id
+    try {
+        const ownerParkingAreas = await ParkingArea.find({ ownerId }).select('_id');
+        const areaIds = ownerParkingAreas.map(area => area._id);
 
-    const booking = await Booking.findByIdAndDelete(bookingId)
-    if (!booking) return res.status(404).json({ error: 'Booking not found' })
+        const slotsInOwnerAreas = await ParkingSlot.find({ areaId: { $in: areaIds } }).select('_id');
+        const slotIds = slotsInOwnerAreas.map(slot => slot._id);
 
-    // Free the slot
-    await ParkingSlot.findByIdAndUpdate(booking.slotId, { isBooked: false })
+        const cancellationRequests = await Booking.find({ 
+            parkingSlot: { $in: slotIds },
+            status: 'cancellation_requested' 
+        }).populate('parkingSlot').populate('userId', 'name email');
 
-    res.status(200).json({ message: 'Booking cancelled' })
-  } catch (err) {
-    res.status(500).json({ error: 'Failed to cancel' })
-  }
+        res.status(200).json(cancellationRequests);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error while fetching cancellation requests', error: error.message });
+    }
 };
 
-export const getAvailableSlots = async (req, res) => {
-  try {
-    const { areaId, startTime, endTime } = req.query;
+// Owner responds to a cancellation request
+export const respondToCancellation = async (req, res) => {
+  const { id } = req.params; // Booking ID
+  const { decision } = req.body; // 'approve' or 'deny'
+  const ownerId = req.user._id;
 
-    if (!areaId || !startTime || !endTime) {
-      return res.status(400).json({ message: 'Missing required query parameters' });
+  if (!['approve', 'deny'].includes(decision)) {
+    return res.status(400).json({ message: "Invalid decision. Must be 'approve' or 'deny'." });
+  }
+  
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const booking = await Booking.findById(id).session(session);
+    if (!booking) {
+      await session.abortTransaction();
+      return res.status(404).json({ message: 'Booking not found' });
     }
 
-    const start = new Date(startTime);
-    const end = new Date(endTime);
-
-    if (start >= end) {
-      return res.status(400).json({ message: 'End time must be after start time' });
+    const slot = await ParkingSlot.findById(booking.parkingSlot).populate('areaId').session(session);
+    if (slot.areaId.ownerId.toString() !== ownerId.toString()) {
+        await session.abortTransaction();
+        return res.status(403).json({ message: 'You are not the owner of this parking area.' });
     }
 
-    const allSlots = await ParkingSlot.find({ area: areaId });
+    if (booking.status !== 'cancellation_requested') {
+        await session.abortTransaction();
+        return res.status(400).json({ message: `This booking is not awaiting cancellation. Current status: ${booking.status}`});
+    }
 
-    const bookedSlots = await Booking.find({
-      parkingSlot: { $in: allSlots.map(slot => slot._id) },
-      isActive: true,
-      $or: [
-        { startTime: { $lt: end }, endTime: { $gt: start } }
-      ]
-    }).select('parkingSlot');
+    if (decision === 'approve') {
+      booking.status = 'cancelled';
+      slot.isAvailable = true;
+      slot.bookedBy = null;
+      slot.bookingTime = null;
+      await slot.save({ session });
+    } else { // 'deny'
+      booking.status = 'booked';
+    }
 
-    const bookedSlotIds = bookedSlots.map(b => b.parkingSlot.toString());
+    await booking.save({ session });
+    await session.commitTransaction();
 
-    const availableSlots = allSlots.filter(
-      slot => !bookedSlotIds.includes(slot._id.toString())
-    );
-
-    res.json({ availableSlots });
+    res.status(200).json({ message: `Cancellation request has been ${decision}d.`, booking });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
+    await session.abortTransaction();
+    res.status(500).json({ message: 'Server error while responding to cancellation', error: error.message });
+  } finally {
+    session.endSession();
   }
-};
-
-export const getSlotAvailability = async (req, res) => {
-  const { slotId } = req.params;
-  const { startTime, endTime } = req.query;
-
-  const bookings = await Booking.find({
-    slot: slotId,
-    $or: [
-      { startTime: { $lt: endTime }, endTime: { $gt: startTime } },
-    ],
-  });
-
-  res.status(200).json({
-    available: bookings.length === 0
-  });
 };
