@@ -4,11 +4,11 @@ import {
   updateMyProfile,
   updateUserPassword
 } from '../controllers/profileController.js';
-import { ownerAuth } from '../middleware/authMiddleware.js';
+import { auth } from '../middleware/auth.js';
 
 const router = express.Router();
 
-router.use(ownerAuth);
+router.use(auth);
 
 router.get('/me', getMyProfile);
 router.put('/update-me', updateMyProfile);
