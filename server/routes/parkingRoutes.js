@@ -6,7 +6,7 @@ import {
   deleteParkingArea,
   getOwnerDashboardStats // Import new function
 } from '../controllers/parkingController.js';
-import { ownerAuth } from '../middleware/authMiddleware.js';
+import { ownerAuth } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 

@@ -4,8 +4,7 @@ import {
   getCancellationRequests,
   respondToCancellation
 } from '../controllers/bookingController.js';
-import { auth, userAuth } from '../middleware/auth.js';
-import { ownerAuth } from '../middleware/authMiddleware.js';
+import { auth, userAuth, ownerAuth } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 

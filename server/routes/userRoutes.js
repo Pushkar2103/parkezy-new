@@ -5,7 +5,7 @@ import {
   bookSlot,
   getUserBookings
 } from '../controllers/userController.js';
-import { auth, userAuth } from '../middleware/auth.js';
+import { auth, userAuth } from '../middlewares/authMiddleware.js';
 
 const router = express.Router();
 
