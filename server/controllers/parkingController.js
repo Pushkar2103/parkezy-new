@@ -20,49 +20,40 @@ export const createParkingArea = async (req, res) => {
     return res.status(400).json({ message: 'Please provide all required fields.' });
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
+  // NOTE: Transactions removed to support standalone MongoDB instances.
   try {
-    let location = await ParkingLocation.findOne({ name: locationName, city }).session(session);
+    let location = await ParkingLocation.findOne({ name: locationName, city });
 
     if (!location) {
-      const newLocations = await ParkingLocation.create([{
+      location = await ParkingLocation.create({
         name: locationName,
         city,
         coordinates: { lat, lng }
-      }], { session });
-      location = newLocations[0];
+      });
     }
 
-    const newParkingAreas = await ParkingArea.create([{
+    const newParkingArea = await ParkingArea.create({
       ownerId,
       locationId: location._id,
       name,
       totalSlots,
       image
-    }], { session });
-    
-    const parkingArea = newParkingAreas[0];
+    });
 
     const slots = [];
     for (let i = 1; i <= totalSlots; i++) {
       slots.push({
-        areaId: parkingArea._id,
+        areaId: newParkingArea._id,
         slotNumber: `S${i}`,
       });
     }
-    await ParkingSlot.insertMany(slots, { session });
+    await ParkingSlot.insertMany(slots);
 
-    await session.commitTransaction();
-    res.status(201).json(parkingArea);
+    res.status(201).json(newParkingArea);
 
   } catch (error) {
-    await session.abortTransaction();
     console.error('Error creating parking area:', error);
     res.status(500).json({ message: 'Server error while creating parking area.', error: error.message });
-  } finally {
-    session.endSession();
   }
 };
 
@@ -106,56 +97,51 @@ export const updateParkingArea = async (req, res) => {
 export const deleteParkingArea = async (req, res) => {
   const { id } = req.params;
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
-
+  // NOTE: Transactions removed to support standalone MongoDB instances.
   try {
-    const parkingArea = await ParkingArea.findById(id).session(session);
+    const parkingArea = await ParkingArea.findById(id);
 
     if (!parkingArea) {
-      await session.abortTransaction();
       return res.status(404).json({ message: 'Parking area not found.' });
     }
 
     if (parkingArea.ownerId.toString() !== req.user._id.toString()) {
-      await session.abortTransaction();
       return res.status(403).json({ message: 'User not authorized to delete this parking area.' });
     }
 
-    const slotsToDelete = await ParkingSlot.find({ areaId: id }).session(session);
+    const slotsToDelete = await ParkingSlot.find({ areaId: id });
     const slotIds = slotsToDelete.map(slot => slot._id);
 
-    await Booking.deleteMany({ parkingSlot: { $in: slotIds } }).session(session);
-    await ParkingSlot.deleteMany({ areaId: id }).session(session);
-    await ParkingArea.findByIdAndDelete(id).session(session);
+    await Booking.deleteMany({ parkingSlot: { $in: slotIds } });
+    await ParkingSlot.deleteMany({ areaId: id });
+    await ParkingArea.findByIdAndDelete(id);
 
-    await session.commitTransaction();
     res.status(200).json({ message: 'Parking area and all associated data deleted successfully.' });
 
   } catch (error) {
-    await session.abortTransaction();
     console.error('Error deleting parking area:', error);
     res.status(500).json({ message: 'Server error while deleting parking area.' });
-  } finally {
-    session.endSession();
   }
 };
-
 
 export const getOwnerDashboardStats = async (req, res) => {
   const ownerId = req.user._id;
 
   try {
     const ownerParkingAreas = await ParkingArea.find({ ownerId }).select('_id name');
+    
     if (ownerParkingAreas.length === 0) {
       return res.status(200).json({
         totalAreas: 0,
         totalSlots: 0,
+        occupiedSlots: 0,
         currentOccupancy: 0,
         totalBookings: 0,
         cancellationRequests: 0,
+        parkingAreas: []
       });
     }
+
     const areaIds = ownerParkingAreas.map(area => area._id);
 
     const totalSlots = await ParkingSlot.countDocuments({ areaId: { $in: areaIds } });
