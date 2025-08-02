@@ -4,7 +4,7 @@ class ApiService {
         this.token = localStorage.getItem('parkezy_token');
     }
 
-    getHeaders() {
+    getHeaders = () => {
         const headers = { 'Content-Type': 'application/json' };
         if (this.token) {
             headers['Authorization'] = `Bearer ${this.token}`;
@@ -12,16 +12,17 @@ class ApiService {
         return headers;
     }
     
-    setToken(token) {
+    setToken = (token) => {
         this.token = token;
         localStorage.setItem('parkezy_token', token);
     }
 
-    clearToken() {
+    clearToken = () => {
         this.token = null;
     }
 
-    async register(name, email, password, role) {
+    // --- Auth Methods ---
+    register = async (name, email, password, role) => {
         const response = await fetch(`${this.baseUrl}/auth/register`, {
             method: 'POST',
             headers: this.getHeaders(),
@@ -29,16 +30,14 @@ class ApiService {
         });
         return response.json();
     }
-
-    async verifyEmail(verificationToken) {
+    verifyEmail = async (verificationToken) => {
         const response = await fetch(`${this.baseUrl}/auth/verify-email/${verificationToken}`, {
             method: 'GET',
             headers: this.getHeaders(),
         });
         return response.json();
     }
-
-    async login(email, password) {
+    login = async (email, password) => {
         const response = await fetch(`${this.baseUrl}/auth/login`, {
             method: 'POST',
             headers: this.getHeaders(),
@@ -46,8 +45,7 @@ class ApiService {
         });
         return response.json();
     }
-    
-    async forgotPassword(email) {
+    forgotPassword = async (email) => {
         const response = await fetch(`${this.baseUrl}/auth/forgot-password`, {
             method: 'POST',
             headers: this.getHeaders(),
@@ -55,8 +53,7 @@ class ApiService {
         });
         return response.json();
     }
-
-    async resetPassword(token, password) {
+    resetPassword = async (token, password) => {
         const response = await fetch(`${this.baseUrl}/auth/reset-password/${token}`, {
             method: 'PATCH',
             headers: this.getHeaders(),
@@ -65,39 +62,68 @@ class ApiService {
         return response.json();
     }
 
-    async getParkingAreas(searchTerm = '') {
+    // --- User Methods ---
+    getParkingAreas = async (searchTerm = '', lat, lng, radius = 10) => {
         const url = new URL(`${window.location.origin}${this.baseUrl}/user/parking-areas`);
-        if (searchTerm) {
-            url.searchParams.append('search', searchTerm);
-        }
+        if (searchTerm) url.searchParams.append('search', searchTerm);
+        if (lat) url.searchParams.append('lat', lat);
+        if (lng) url.searchParams.append('lng', lng);
+        if (radius) url.searchParams.append('radius', radius);
+        
         const response = await fetch(url.toString(), {
             headers: this.getHeaders(),
         });
         return response.json();
     }
-
-    async getParkingAreaDetails(areaId) {
+    getParkingAreaDetails = async (areaId) => {
         const response = await fetch(`${this.baseUrl}/user/parking-areas/${areaId}`, {
             headers: this.getHeaders(),
         });
         return response.json();
     }
+    bookSlot = async (bookingData) => {
+        const response = await fetch(`${this.baseUrl}/user/book-slot`, {
+            method: 'POST',
+            headers: this.getHeaders(),
+            body: JSON.stringify(bookingData),
+        });
+        return response.json();
+    }
+    getUserBookings = async () => {
+        const response = await fetch(`${this.baseUrl}/user/bookings`, {
+            headers: this.getHeaders(),
+        });
+        return response.json();
+    }
+    requestBookingCancellation = async (bookingId) => {
+        const response = await fetch(`${this.baseUrl}/bookings/${bookingId}/request-cancellation`, {
+            method: 'PUT',
+            headers: this.getHeaders(),
+        });
+        return response.json();
+    }
+    requestBookingCompletion = async (bookingId) => {
+        const response = await fetch(`${this.baseUrl}/bookings/${bookingId}/request-completion`, {
+            method: 'PUT',
+            headers: this.getHeaders(),
+        });
+        return response.json();
+    }
 
-    async getOwnerStats() {
+    // --- Owner Methods ---
+    getOwnerStats = async () => {
         const response = await fetch(`${this.baseUrl}/parking-areas/owner/stats`, {
             headers: this.getHeaders(),
         });
         return response.json();
     }
-
-    async getOwnerParkingAreas() {
+    getOwnerParkingAreas = async () => {
         const response = await fetch(`${this.baseUrl}/parking-areas/owner`, {
             headers: this.getHeaders(),
         });
         return response.json();
     }
-
-    async createParkingArea(data) {
+    createParkingArea = async (data) => {
         const response = await fetch(`${this.baseUrl}/parking-areas`, {
             method: 'POST',
             headers: this.getHeaders(),
@@ -105,8 +131,7 @@ class ApiService {
         });
         return response.json();
     }
-
-    async updateParkingArea(id, data) {
+    updateParkingArea = async (id, data) => {
         const response = await fetch(`${this.baseUrl}/parking-areas/${id}`, {
             method: 'PUT',
             headers: this.getHeaders(),
@@ -114,7 +139,62 @@ class ApiService {
         });
         return response.json();
     }
+    deleteParkingArea = async (id) => {
+        const response = await fetch(`${this.baseUrl}/parking-areas/${id}`, {
+            method: 'DELETE',
+            headers: this.getHeaders(),
+        });
+        return response.json();
+    }
+     getCancellationRequests = async () => {
+        const response = await fetch(`${this.baseUrl}/bookings/owner/cancellation-requests`, {
+            headers: this.getHeaders(),
+        });
+        return response.json();
+    }
+
+    respondToCancellation = async (bookingId, decision) => {
+        const response = await fetch(`${this.baseUrl}/bookings/${bookingId}/respond-cancellation`, {
+            method: 'PUT',
+            headers: this.getHeaders(),
+            body: JSON.stringify({ decision }),
+        });
+        return response.json();
+    }
+
+    getCompletionRequests = async () => {
+        const response = await fetch(`${this.baseUrl}/bookings/owner/completion-requests`, {
+            headers: this.getHeaders(),
+        });
+        return response.json();
+    }
+    
+    respondToCompletion = async (bookingId, decision) => {
+        const response = await fetch(`${this.baseUrl}/bookings/${bookingId}/respond-completion`, {
+            method: 'PUT',
+            headers: this.getHeaders(),
+            body: JSON.stringify({ decision }),
+        });
+        return response.json();
+    }
+
+     updateMyProfile = async (profileData) => {
+        const response = await fetch(`${this.baseUrl}/profile/update-me`, {
+            method: 'PUT',
+            headers: this.getHeaders(),
+            body: JSON.stringify(profileData),
+        });
+        return response.json();
+    }
+
+    updateUserPassword = async (passwordData) => {
+        const response = await fetch(`${this.baseUrl}/profile/update-my-password`, {
+            method: 'PUT',
+            headers: this.getHeaders(),
+            body: JSON.stringify(passwordData),
+        });
+        return response.json();
+    }
 }
 
 export const apiService = new ApiService();
-

@@ -3,80 +3,106 @@ import ParkingSlot from '../models/ParkingSlot.js';
 import Booking from '../models/Booking.js';
 import mongoose from 'mongoose';
 
+const getDistance = (lat1, lon1, lat2, lon2) => {
+  const R = 6371; // Radius of the earth in km
+  const dLat = deg2rad(lat2 - lat1);
+  const dLon = deg2rad(lon2 - lon1);
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  const d = R * c; // Distance in km
+  return d;
+};
+
+const deg2rad = (deg) => {
+  return deg * (Math.PI / 180);
+};
+
 export const getAllParkingAreas = async (req, res) => {
   const { search } = req.query;
+  const lat = req.query.lat ? parseFloat(req.query.lat) : null;
+  const lng = req.query.lng ? parseFloat(req.query.lng) : null;
+  const radius = req.query.radius ? parseFloat(req.query.radius) : 10;
 
   try {
-    let pipeline = [
-      {
-        $lookup: {
-          from: 'parkinglocations',
-          localField: 'locationId',
-          foreignField: '_id',
-          as: 'location'
-        }
-      },
-      {
-        $unwind: '$location'
-      },
-    ];
+    const allParkingAreas = await ParkingArea.find({}).populate('locationId');
 
-    if (search) {
-      pipeline.push({
-        $match: {
-          $or: [
-            { name: { $regex: search, $options: 'i' } },
-            { 'location.name': { $regex: search, $options: 'i' } },
-            { 'location.city': { $regex: search, $options: 'i' } }
-          ]
-        }
-      });
+    if (allParkingAreas.length === 0) {
+        return res.status(200).json([]);
     }
 
-    pipeline.push(
-      {
-        $lookup: {
-          from: 'parkingslots',
-          localField: '_id',
-          foreignField: 'areaId',
-          as: 'slots'
+    const augmentedAreas = await Promise.all(allParkingAreas.map(async (area) => {
+      const availableSlots = await ParkingSlot.countDocuments({ areaId: area._id, isAvailable: true });
+      return {
+        _id: area._id,
+        name: area.name,
+        image: area.image,
+        totalSlots: area.totalSlots,
+        availableSlots: availableSlots,
+        location: area.locationId,
+      };
+    }));
+
+    let nearbyAreas = augmentedAreas;
+    if (lat && lng) {
+      nearbyAreas = augmentedAreas
+        .map(area => {
+          const coords = area.location?.coordinates?.coordinates;
+          if (!coords || !Array.isArray(coords) || coords.length !== 2) {
+            return null;
+          }
+          
+          const parkingLng = coords[0];
+          const parkingLat = coords[1];
+          const distance = getDistance(lat, lng, parkingLat, parkingLng);
+          
+          return { ...area, distance };
+        })
+        .filter(area => area && area.distance <= radius)
+        .sort((a, b) => a.distance - b.distance);
+    }
+
+    let finalResults = nearbyAreas;
+    if (search) {
+      const searchQuery = search.toLowerCase();
+      finalResults = nearbyAreas.filter(area =>
+        area.name.toLowerCase().includes(searchQuery) ||
+        (area.location && area.location.name.toLowerCase().includes(searchQuery)) ||
+        (area.location && area.location.city.toLowerCase().includes(searchQuery))
+      );
+    }
+
+    const resultsForFrontend = finalResults.map(area => {
+        const { location, ...rest } = area;
+        const coords = location?.coordinates?.coordinates;
+
+        if (!location || !coords) {
+            return null;
         }
-      },
-      {
-        $addFields: {
-          availableSlots: {
-            $size: {
-              $filter: {
-                input: '$slots',
-                as: 'slot',
-                cond: { $eq: ['$$slot.isAvailable', true] }
-              }
+
+        return {
+            ...rest,
+            location: {
+                _id: location._id,
+                name: location.name,
+                city: location.city,
+                coordinates: {
+                    lat: coords[1], // latitude
+                    lng: coords[0]  // longitude
+                }
             }
-          }
-        }
-      },
-      {
-        $project: {
-          name: 1,
-          image: 1,
-          totalSlots: 1,
-          availableSlots: 1,
-          location: {
-            name: '$location.name',
-            city: '$location.city',
-            coordinates: '$location.coordinates'
-          }
-        }
-      }
-    );
+        };
+    }).filter(Boolean); // Remove any null entries from the final array
 
-    const parkingAreas = await ParkingArea.aggregate(pipeline);
-
-    res.status(200).json(parkingAreas);
+    res.status(200).json(resultsForFrontend);
   } catch (error) {
+    console.error("Error in getAllParkingAreas:", error);
     res.status(500).json({ message: 'Server error while fetching parking areas', error: error.message });
   }
 };
+
 
 export const getParkingAreaDetails = async (req, res) => {
   try {
@@ -104,26 +130,33 @@ export const bookSlot = async (req, res) => {
     return res.status(400).json({ message: 'Please provide all required booking details.' });
   }
 
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  const start = new Date(startTime);
+  const end = new Date(endTime);
+  const now = new Date();
+
+  if (start < now) {
+    return res.status(400).json({ message: 'Booking start time cannot be in the past.' });
+  }
+
+  if (end <= start) {
+    return res.status(400).json({ message: 'Booking end time must be after the start time.' });
+  }
 
   try {
-    const slot = await ParkingSlot.findById(slotId).session(session);
+    const slot = await ParkingSlot.findById(slotId);
 
     if (!slot) {
-      await session.abortTransaction();
       return res.status(404).json({ message: 'Parking slot not found' });
     }
 
     if (!slot.isAvailable) {
-      await session.abortTransaction();
       return res.status(400).json({ message: 'This slot is already booked' });
     }
 
     slot.isAvailable = false;
     slot.bookedBy = userId;
     slot.bookingTime = new Date();
-    await slot.save({ session });
+    await slot.save();
 
     const newBooking = new Booking({
       userName,
@@ -134,36 +167,37 @@ export const bookSlot = async (req, res) => {
       endTime,
       status: 'booked'
     });
-    await newBooking.save({ session });
+    await newBooking.save();
 
-    await session.commitTransaction();
     res.status(201).json({ message: 'Slot booked successfully!', booking: newBooking });
 
   } catch (error) {
-    await session.abortTransaction();
+    console.error("Error in bookSlot:", error);
     res.status(500).json({ message: 'Server error while booking slot', error: error.message });
-  } finally {
-    session.endSession();
   }
 };
 
 export const getUserBookings = async (req, res) => {
-  try {
-    const userId = req.user._id;
-    const bookings = await Booking.find({ userId })
-      .populate({
-        path: 'parkingSlot',
-        populate: {
-          path: 'areaId',
-          populate: {
-            path: 'locationId'
-          }
-        }
-      })
-      .sort({ createdAt: -1 });
+    try {
+        const userId = req.user._id;
+        const bookings = await Booking.find({ 
+            userId,
+            status: { $ne: 'completed' } // **FIX:** Exclude completed bookings
+        })
+        .populate({
+            path: 'parkingSlot',
+            populate: {
+            path: 'areaId',
+            populate: {
+                path: 'locationId'
+            }
+            }
+        })
+        .sort({ createdAt: -1 });
 
-    res.status(200).json(bookings);
-  } catch (error) {
-    res.status(500).json({ message: 'Server error while fetching user bookings', error: error.message });
-  }
+        res.status(200).json(bookings);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error while fetching user bookings', error: error.message });
+    }
 };
+

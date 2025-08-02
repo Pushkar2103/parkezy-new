@@ -1,11 +1,29 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
-import {apiService} from '../api/apiService'; 
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react';
+import { apiService } from '../api/apiService';
 
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [requestCount, setRequestCount] = useState(0);
+
+  const fetchRequestCount = useCallback(async () => {
+    if (user?.role !== 'owner') {
+        setRequestCount(0);
+        return;
+    }
+    try {
+        const [cancellations, completions] = await Promise.all([
+            apiService.getCancellationRequests(),
+            apiService.getCompletionRequests()
+        ]);
+        setRequestCount(cancellations.length + completions.length);
+    } catch (error) {
+        console.error("Failed to fetch request counts", error);
+        setRequestCount(0);
+    }
+  }, [user]);
 
   useEffect(() => {
     const token = localStorage.getItem('parkezy_token');
@@ -16,12 +34,17 @@ export const AuthProvider = ({ children }) => {
         apiService.setToken(token);
         setUser(parsedUser);
       } catch (e) {
-        console.error("Failed to parse user data from localStorage", e);
         localStorage.clear();
       }
     }
     setLoading(false);
   }, []);
+
+  useEffect(() => {
+    if (user?.role === 'owner') {
+        fetchRequestCount();
+    }
+  }, [user, fetchRequestCount]);
 
   const login = (userData) => {
     apiService.setToken(userData.token);
@@ -34,11 +57,12 @@ export const AuthProvider = ({ children }) => {
   const logout = () => {
     apiService.clearToken();
     setUser(null);
+    setRequestCount(0);
     localStorage.removeItem('parkezy_user');
     localStorage.removeItem('parkezy_token');
   };
 
-  const value = { user, login, logout, isAuthenticated: !!user, loading };
+  const value = { user, login, logout, isAuthenticated: !!user, loading, requestCount, refreshRequestCount: fetchRequestCount };
 
   return (
     <AuthContext.Provider value={value}>
@@ -47,7 +71,6 @@ export const AuthProvider = ({ children }) => {
   );
 };
 
-// Custom hook to use the auth context
 export const useAuth = () => {
   return useContext(AuthContext);
 };

@@ -4,6 +4,7 @@ import ParkingSlot from '../models/ParkingSlot.js';
 import Booking from '../models/Booking.js';
 import mongoose from 'mongoose';
 
+
 export const createParkingArea = async (req, res) => {
   const {
     name,
@@ -16,11 +17,10 @@ export const createParkingArea = async (req, res) => {
   } = req.body;
   const ownerId = req.user._id;
 
-  if (!name || !totalSlots || !locationName || !city) {
-    return res.status(400).json({ message: 'Please provide all required fields.' });
+  if (!name || !totalSlots || !locationName || !city || !lat || !lng) {
+    return res.status(400).json({ message: 'Please provide all required fields, including coordinates from the map.' });
   }
 
-  // NOTE: Transactions removed to support standalone MongoDB instances.
   try {
     let location = await ParkingLocation.findOne({ name: locationName, city });
 
@@ -28,7 +28,10 @@ export const createParkingArea = async (req, res) => {
       location = await ParkingLocation.create({
         name: locationName,
         city,
-        coordinates: { lat, lng }
+        coordinates: {
+          type: 'Point',
+          coordinates: [parseFloat(lng), parseFloat(lat)] // [longitude, latitude]
+        }
       });
     }
 
@@ -97,7 +100,6 @@ export const updateParkingArea = async (req, res) => {
 export const deleteParkingArea = async (req, res) => {
   const { id } = req.params;
 
-  // NOTE: Transactions removed to support standalone MongoDB instances.
   try {
     const parkingArea = await ParkingArea.findById(id);
 

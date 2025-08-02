@@ -9,7 +9,6 @@ const bookingSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  // Add a reference to the user who made the booking
   userId: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'User',
@@ -28,10 +27,9 @@ const bookingSchema = new mongoose.Schema({
     type: Date,
     required: true,
   },
-  // Replace isActive with a more descriptive status
   status: {
     type: String,
-    enum: ['booked', 'cancellation_requested', 'cancelled', 'completed'],
+    enum: ['booked', 'cancellation_requested', 'cancelled', 'completed', 'completion_requested'],
     default: 'booked',
   },
 }, {

@@ -12,8 +12,15 @@ import AuthPage from './pages/AuthPage';
 import UserDashboard from './pages/UserDashboard';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
 import ResetPasswordPage from './pages/ResetPasswordPage'; 
-import ParkingDetailsPage from './pages/ParkingDetails'; 
+import ParkingDetailsPage from './pages/ParkingDetailsPage'; 
 import OwnerDashboard from './pages/OwnerDashboard';
+import MyBookingsPage from './pages/MyBookingsPage';
+import ProfilePage from './pages/ProfilePage'; 
+import RequestsPage from './pages/owner/RequestsPage';
+import OwnerStatsPage from './pages/owner/OwnerStatsPage';
+import MyParkingsPage from './pages/owner/MyParkingsPage';
+import AddParkingPage from './pages/owner/AddParkingPage';
+import EditParkingPage from './pages/owner/EditParkingPage';
 
 function Layout() {
   return (
@@ -42,15 +49,24 @@ function App() {
 
         <Route path="verify-email/:token" element={<VerifyEmailPage />} />
 
-{/*         
+        <Route element={<ProtectedRoute allowedRoles={['user', 'owner']} />}>
+            <Route path="profile" element={<ProfilePage />} />
+        </Route>
+
         <Route element={<ProtectedRoute allowedRoles={['user']} />}>
           <Route path="dashboard" element={<UserDashboard />} />
           <Route path="parking/:id" element={<ParkingDetailsPage />} />
+          <Route path="my-bookings" element={<MyBookingsPage />} />
         </Route>
-*/}
 
-        <Route element={<ProtectedRoute allowedRoles={['owner']} />}>
-          <Route path="owner-dashboard" element={<OwnerDashboard />} />
+        <Route path="/owner-dashboard" element={<ProtectedRoute allowedRoles={['owner']} />}>
+            <Route element={<OwnerDashboard />}>
+                <Route index element={<OwnerStatsPage />} />
+                <Route path="parkings" element={<MyParkingsPage />} />
+                <Route path="parkings/edit/:id" element={<EditParkingPage />} />
+                <Route path="add-parking" element={<AddParkingPage />} />
+                <Route path="requests" element={<RequestsPage />} />
+            </Route>
         </Route> 
 
         <Route path="*" element={<div className="text-center py-10"><h1>404 - Page Not Found</h1></div>} />
