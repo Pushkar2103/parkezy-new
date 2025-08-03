@@ -34,6 +34,7 @@ const AuthPage = ({ isRegister = false }) => {
         setLoading(true);
         setFeedback({ message: '', type: '' });
 
+        
         try {
             if (isRegister) {
                 const response = await apiService.register(name, email, password, role);

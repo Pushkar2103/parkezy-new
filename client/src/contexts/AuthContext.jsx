@@ -4,28 +4,30 @@ import { apiService } from '../api/apiService';
 const AuthContext = createContext(null);
 
 export const AuthProvider = ({ children }) => {
-    const [user, setUser] = useState(null);
+    const [user, setUser] = useState(() => localStorage.getItem('parkezy_user'));
+    const [token, setToken] = useState(() => localStorage.getItem('parkezy_token'));
     const [loading, setLoading] = useState(true);
     const [requestCount, setRequestCount] = useState(0);
 
     useEffect(() => {
         const initializeAuth = async () => {
-            const token = localStorage.getItem('parkezy_token');
             if (token) {
                 try {
-                    const response = await apiService.get('/me');
+                    const response = await apiService.getMyProfile('/me');
                     setUser(response.data);
                 } catch (error) {
                     console.error("Session validation failed", error);
                     localStorage.removeItem('parkezy_token');
                     localStorage.removeItem('parkezy_user');
+                    setUser(null);
+                    setToken(null);
                 }
             }
             setLoading(false);
         };
 
         initializeAuth();
-    }, []);
+    }, [token]);
 
     const fetchRequestCount = useCallback(async () => {
         if (!user || user.role !== 'owner') {
@@ -53,16 +55,18 @@ export const AuthProvider = ({ children }) => {
     }, [user, fetchRequestCount]);
 
     const login = (authData) => {
-        const { user, token } = authData;
+        const { user: userData, token: userToken } = authData;
         
-        setUser(user);
+        setUser(userData);
+        setToken(userToken);
         
-        localStorage.setItem('parkezy_token', token);
-        localStorage.setItem('parkezy_user', JSON.stringify(user));
+        localStorage.setItem('parkezy_token', userToken);
+        localStorage.setItem('parkezy_user', JSON.stringify(userData));
     };
 
     const logout = () => {
         setUser(null);
+        setToken(null);
         setRequestCount(0);
         
         localStorage.removeItem('parkezy_token');
@@ -71,6 +75,7 @@ export const AuthProvider = ({ children }) => {
 
     const value = { 
         user, 
+        token,
         login, 
         logout, 
         isAuthenticated: !!user, 

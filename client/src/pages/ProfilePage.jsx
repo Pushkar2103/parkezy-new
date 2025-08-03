@@ -82,7 +82,10 @@ const ProfilePage = () => {
         setImageFeedback({ message: '', type: '' });
         try {
             const response = await apiService.uploadProfilePicture(selectedFile);
-            login({ user: response.data.user, token });
+            login({ 
+                user: response.data.user || user, 
+                token: response.data.token || token 
+            });
             setImageFeedback({ message: 'Profile picture updated!', type: 'success' });
             setSelectedFile(null);
             setPreview(null);
@@ -99,7 +102,10 @@ const ProfilePage = () => {
         setProfileFeedback({ message: '', type: '' });
         try {
             const response = await apiService.updateMyProfile(profileData);
-            login({ user: response.data, token });
+            login({ 
+                user: response.data.user || user, 
+                token: response.data.token || token 
+            });
             setProfileFeedback({ message: 'Profile updated successfully!', type: 'success' });
         } catch (error) {
             setProfileFeedback({ message: error.response?.data?.message || 'Failed to update profile.', type: 'error' });
@@ -114,7 +120,8 @@ const ProfilePage = () => {
         setPasswordFeedback({ message: '', type: '' });
         try {
             const response = await apiService.updateUserPassword(passwordData);
-            setPasswordFeedback({ message: response.data.message, type: 'success' });
+            login({ user: response.data.user || user, token: response.data.token || token });
+            setPasswordFeedback({ message: 'Password updated successfully!', type: 'success' });
             setPasswordData({ currentPassword: '', newPassword: '' });
         } catch (error) {
             setPasswordFeedback({ message: error.response?.data?.message || 'Incorrect current password.', type: 'error' });
