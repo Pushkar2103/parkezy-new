@@ -1,151 +1,86 @@
 import axios from 'axios';
 
-class ApiService {
-    constructor() {
-        const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+const api = axios.create({
+    baseURL: 'https://parkezy-backend.onrender.com/api',
+    headers: {
+        'Content-Type': 'application/json',
+    },
+});
 
-        this.token = localStorage.getItem('parkezy_token');
+let authToken = localStorage.getItem('parkezy_token');
 
-        this.axiosInstance = axios.create({
-            baseURL,
-            headers: {
-                'Content-Type': 'application/json',
-            },
-        });
-
-        this.axiosInstance.interceptors.request.use(config => {
-            if (this.token) {
-                config.headers.Authorization = `Bearer ${this.token}`;
-            }
-            return config;
-        });
+api.interceptors.request.use(
+    (config) => {
+        if (authToken) {
+            config.headers['Authorization'] = `Bearer ${authToken}`;
+        }
+        return config;
+    },
+    (error) => {
+        return Promise.reject(error);
     }
+);
 
-    setToken = (token) => {
-        this.token = token;
-        localStorage.setItem('parkezy_token', token);
-    }
+const setToken = (token) => {
+    authToken = token;
+    localStorage.setItem('parkezy_token', token);
+};
 
-    clearToken = () => {
-        this.token = null;
-        localStorage.removeItem('parkezy_token');
-    }
+const clearToken = () => {
+    authToken = null;
+    localStorage.removeItem('parkezy_token');
+};
+
+export const apiService = {
+    setToken,
+    clearToken,
 
     // --- Auth Methods ---
-    register = (name, email, password, role) =>
-        this.axiosInstance.post('/auth/register', { name, email, password, role });
-
-    verifyEmail = (token) =>
-        this.axiosInstance.get(`/auth/verify-email/${token}`);
-
-    login = (email, password) =>
-        this.axiosInstance.post('/auth/login', { email, password });
-
-    forgotPassword = (email) =>
-        this.axiosInstance.post('/auth/forgot-password', { email });
-
-    resetPassword = (token, password) =>
-        this.axiosInstance.patch(`/auth/reset-password/${token}`, { password });
+    register: (name, email, password, role) => api.post('/auth/register', { name, email, password, role }),
+    verifyEmail: (verificationToken) => api.get(`/auth/verify-email/${verificationToken}`),
+    login: (email, password) => api.post('/auth/login', { email, password }),
+    forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
+    resetPassword: (token, password) => api.patch(`/auth/reset-password/${token}`, { password }),
 
     // --- User Methods ---
-    getParkingAreas = (searchTerm = '', lat, lng, radius = 10) => {
-        const params = {};
-        if (searchTerm) params.search = searchTerm;
-        if (lat) params.lat = lat;
-        if (lng) params.lng = lng;
-        if (radius) params.radius = radius;
-        return this.axiosInstance.get('/user/parking-areas', { params });
-    };
-
-    getParkingAreaDetails = (areaId) =>
-        this.axiosInstance.get(`/user/parking-areas/${areaId}`);
-
-    bookSlot = (bookingData) =>
-        this.axiosInstance.post('/user/book-slot', bookingData);
-
-    getUserBookings = () =>
-        this.axiosInstance.get('/user/bookings');
-
-    requestBookingCancellation = (bookingId) =>
-        this.axiosInstance.put(`/bookings/${bookingId}/request-cancellation`);
-
-    requestBookingCompletion = (bookingId) =>
-        this.axiosInstance.put(`/bookings/${bookingId}/request-completion`);
+    getParkingAreas: (searchTerm = '', lat, lng, radius = 10) => {
+        return api.get('/user/parking-areas', {
+            params: { search: searchTerm, lat, lng, radius },
+        });
+    },
+    getParkingAreaDetails: (areaId) => api.get(`/user/parking-areas/${areaId}`),
+    bookSlot: (bookingData) => api.post('/user/book-slot', bookingData),
+    getUserBookings: () => api.get('/user/bookings'),
+    getUserBookingHistory: () => api.get('/user/bookings/history'),
+    requestBookingCancellation: (bookingId) => api.put(`/bookings/${bookingId}/request-cancellation`),
+    requestBookingCompletion: (bookingId) => api.put(`/bookings/${bookingId}/request-completion`),
+    getSlotAvailability: (slotId) => api.get(`/user/slots/${slotId}/availability`),
 
     // --- Owner Methods ---
-    getOwnerStats = () =>
-        this.axiosInstance.get('/parking-areas/owner/stats');
-
-    getOwnerParkingAreas = () =>
-        this.axiosInstance.get('/parking-areas/owner');
-
-    createParkingArea = (data) => {
+    getOwnerStats: () => api.get('/parking-areas/owner/stats'),
+    getOwnerParkingAreas: () => api.get('/parking-areas/owner'),
+    createParkingArea: (data) => {
         const formData = new FormData();
-        Object.entries(data).forEach(([key, value]) => {
-            if (key !== 'parkingImage') {
-                formData.append(key, value);
-            }
-        });
-        if (data.parkingImage) {
-            formData.append('parkingImage', data.parkingImage);
-        }
-
-        return this.axiosInstance.post('/parking-areas', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-    };
-
-    updateParkingArea = (id, data) => {
+        Object.keys(data).forEach(key => formData.append(key, data[key]));
+        return api.post('/parking-areas', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    },
+    updateParkingArea: (id, data) => {
         const formData = new FormData();
-        Object.entries(data).forEach(([key, value]) => {
-            if (key !== 'parkingImage') {
-                formData.append(key, value);
-            }
-        });
-        if (data.parkingImage) {
-            formData.append('parkingImage', data.parkingImage);
-        }
+        Object.keys(data).forEach(key => formData.append(key, data[key]));
+        return api.put(`/parking-areas/${id}`, formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    },
+    deleteParkingArea: (id) => api.delete(`/parking-areas/${id}`),
+    getCancellationRequests: () => api.get('/bookings/owner/cancellation-requests'),
+    respondToCancellation: (bookingId, decision) => api.put(`/bookings/${bookingId}/respond-cancellation`, { decision }),
+    getCompletionRequests: () => api.get('/bookings/owner/completion-requests'),
+    respondToCompletion: (bookingId, decision) => api.put(`/bookings/${bookingId}/respond-completion`, { decision }),
 
-        return this.axiosInstance.put(`/parking-areas/${id}`, formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-    };
-
-    deleteParkingArea = (id) =>
-        this.axiosInstance.delete(`/parking-areas/${id}`);
-
-    getCancellationRequests = () =>
-        this.axiosInstance.get('/bookings/owner/cancellation-requests');
-
-    respondToCancellation = (bookingId, decision) =>
-        this.axiosInstance.put(`/bookings/${bookingId}/respond-cancellation`, { decision });
-
-    getCompletionRequests = () =>
-        this.axiosInstance.get('/bookings/owner/completion-requests');
-
-    respondToCompletion = (bookingId, decision) =>
-        this.axiosInstance.put(`/bookings/${bookingId}/respond-completion`, { decision });
-
-    updateMyProfile = (profileData) =>
-        this.axiosInstance.put('/profile/update-me', profileData);
-
-    updateUserPassword = (passwordData) =>
-        this.axiosInstance.put('/profile/update-my-password', passwordData);
-
-    getUserBookingHistory = () =>
-        this.axiosInstance.get('/user/bookings/history');
-
-    uploadProfilePicture = (file) => {
+    // --- Profile Methods ---
+    updateMyProfile: (profileData) => api.put('/profile/update-me', profileData),
+    updateUserPassword: (passwordData) => api.put('/profile/update-my-password', passwordData),
+    uploadProfilePicture: (file) => {
         const formData = new FormData();
         formData.append('profilePic', file);
-
-        return this.axiosInstance.post('/profile/upload-picture', formData, {
-            headers: { 'Content-Type': 'multipart/form-data' }
-        });
-    };
-
-    getSlotAvailability = (slotId) =>
-        this.axiosInstance.get(`/user/slots/${slotId}/availability`);
-}
-
-export const apiService = new ApiService();
+        return api.post('/profile/upload-picture', formData, { headers: { 'Content-Type': 'multipart/form-data' } });
+    },
+};
