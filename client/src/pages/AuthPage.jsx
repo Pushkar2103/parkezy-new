@@ -31,17 +31,14 @@ const AuthPage = ({ isRegister = false }) => {
         try {
             if (isRegister) {
                 const response = await apiService.register(name, email, password, role);
-                // The new apiService throws on error, so we only handle success here
                 setMessage(response.message);
-            } else { // Login
+            } else { 
                 const response = await apiService.login(email, password);
-                // If the line above doesn't throw, the login was successful
                 login(response);
                 const dashboardPath = response.user.role === 'owner' ? '/owner-dashboard' : '/dashboard';
                 navigate(dashboardPath, { replace: true });
             }
         } catch (err) {
-            // **FIX:** The catch block now receives the specific error message from the server
             setError(err.message || 'An unknown error occurred.');
         } finally {
             setLoading(false);
@@ -59,7 +56,6 @@ const AuthPage = ({ isRegister = false }) => {
 
                 {!message && (
                     <form onSubmit={handleSubmit} className="space-y-6">
-                        {/* ... form inputs are unchanged ... */}
                         {isRegister && (
                             <div>
                                 <label className="block text-gray-700 font-medium mb-2" htmlFor="name">Full Name</label>

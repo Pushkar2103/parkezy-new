@@ -36,7 +36,11 @@ const corsOptions = {
 };
 
 app.use(express.json())
-app.use(cors(corsOptions))
+app.use(cors({
+  origin: true,
+  credentials: true
+}));
+
 
 app.use('/api/profile', profileRoutes)
 app.use('/api/auth', authRoutes)
