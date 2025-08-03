@@ -15,7 +15,7 @@ export const register = async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const defaultProfilePic = `./asets/user.png`; 
+    const defaultProfilePic = `https://img.icons8.com/?size=100&id=2yC9SZKcXDdX&format=png&color=1A1A1A`; 
 
     const newUser = new User({ 
         name, 
