@@ -9,13 +9,14 @@ export const createParkingArea = async (req, res) => {
   const {
     name,
     totalSlots,
-    image,
     locationName,
     city,
     lat,
     lng
   } = req.body;
   const ownerId = req.user._id;
+
+    const image = req.file ? req.file.path : '';
 
   if (!name || !totalSlots || !locationName || !city || !lat || !lng) {
     return res.status(400).json({ message: 'Please provide all required fields, including coordinates from the map.' });
@@ -72,7 +73,8 @@ export const getOwnerParkingAreas = async (req, res) => {
 
 export const updateParkingArea = async (req, res) => {
   const { id } = req.params;
-  const { name, image } = req.body;
+  const { name } = req.body;
+  const image = req.file ? req.file.path : '';
 
   try {
     const parkingArea = await ParkingArea.findById(id);

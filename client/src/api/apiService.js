@@ -123,22 +123,49 @@ class ApiService {
         });
         return response.json();
     }
+
     createParkingArea = async (data) => {
+        const formData = new FormData();
+        for (const key in data) {
+            if (key !== 'parkingImage') {
+                formData.append(key, data[key]);
+            }
+        }
+        if (data.parkingImage) {
+            formData.append('parkingImage', data.parkingImage);
+        }
+
         const response = await fetch(`${this.baseUrl}/parking-areas`, {
             method: 'POST',
-            headers: this.getHeaders(),
-            body: JSON.stringify(data),
+            headers: {
+                authorization: `Bearer ${this.token}`,
+            },
+            body: formData,
         });
         return response.json();
     }
+
     updateParkingArea = async (id, data) => {
+        const formData = new FormData();
+        for (const key in data) {
+            if (key !== 'parkingImage') {
+                formData.append(key, data[key]);
+            }
+        }
+        if (data.parkingImage) {
+            formData.append('parkingImage', data.parkingImage);
+        }
+
         const response = await fetch(`${this.baseUrl}/parking-areas/${id}`, {
             method: 'PUT',
-            headers: this.getHeaders(),
-            body: JSON.stringify(data),
+            headers: {
+                authorization: `Bearer ${this.token}`,
+            },
+            body: formData,
         });
         return response.json();
     }
+
     deleteParkingArea = async (id) => {
         const response = await fetch(`${this.baseUrl}/parking-areas/${id}`, {
             method: 'DELETE',
@@ -192,6 +219,27 @@ class ApiService {
             method: 'PUT',
             headers: this.getHeaders(),
             body: JSON.stringify(passwordData),
+        });
+        return response.json();
+    }
+
+    getUserBookingHistory = async () => {
+        const response = await fetch(`${this.baseUrl}/user/bookings/history`, {
+            headers: this.getHeaders(),
+        });
+        return response.json();
+    }
+
+    uploadProfilePicture = async (file) => {
+        const formData = new FormData();
+        formData.append('profilePic', file);
+
+        const response = await fetch(`${this.baseUrl}/profile/upload-picture`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${this.token}`
+            },
+            body: formData,
         });
         return response.json();
     }

@@ -51,7 +51,6 @@ const OwnerDashboard = () => {
                 </NavLink>
             </div>
             
-            {/* The correct page component will be rendered here by React Router */}
             <Outlet />
         </div>
     );

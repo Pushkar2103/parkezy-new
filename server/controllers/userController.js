@@ -4,7 +4,7 @@ import Booking from '../models/Booking.js';
 import mongoose from 'mongoose';
 
 const getDistance = (lat1, lon1, lat2, lon2) => {
-  const R = 6371; // Radius of the earth in km
+  const R = 6371; 
   const dLat = deg2rad(lat2 - lat1);
   const dLon = deg2rad(lon2 - lon1);
   const a =
@@ -12,7 +12,7 @@ const getDistance = (lat1, lon1, lat2, lon2) => {
     Math.cos(deg2rad(lat1)) * Math.cos(deg2rad(lat2)) *
     Math.sin(dLon / 2) * Math.sin(dLon / 2);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-  const d = R * c; // Distance in km
+  const d = R * c; 
   return d;
 };
 
@@ -182,16 +182,11 @@ export const getUserBookings = async (req, res) => {
         const userId = req.user._id;
         const bookings = await Booking.find({ 
             userId,
-            status: { $ne: 'completed' } // **FIX:** Exclude completed bookings
+            status: { $nin: ['completed', 'cancelled'] } 
         })
         .populate({
             path: 'parkingSlot',
-            populate: {
-            path: 'areaId',
-            populate: {
-                path: 'locationId'
-            }
-            }
+            populate: { path: 'areaId', populate: { path: 'locationId' } }
         })
         .sort({ createdAt: -1 });
 
@@ -201,3 +196,21 @@ export const getUserBookings = async (req, res) => {
     }
 };
 
+export const getUserBookingHistory = async (req, res) => {
+    try {
+        const userId = req.user._id;
+        const bookings = await Booking.find({ 
+            userId,
+            status: { $in: ['completed', 'cancelled'] } 
+        })
+        .populate({
+            path: 'parkingSlot',
+            populate: { path: 'areaId', populate: { path: 'locationId' } }
+        })
+        .sort({ createdAt: -1 });
+
+        res.status(200).json(bookings);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error while fetching booking history', error: error.message });
+    }
+};

@@ -16,11 +16,14 @@ import ParkingDetailsPage from './pages/ParkingDetailsPage';
 import OwnerDashboard from './pages/OwnerDashboard';
 import MyBookingsPage from './pages/MyBookingsPage';
 import ProfilePage from './pages/ProfilePage'; 
+import BookingHistoryPage from './pages/BookingHistoryPage';
+
 import RequestsPage from './pages/owner/RequestsPage';
 import OwnerStatsPage from './pages/owner/OwnerStatsPage';
 import MyParkingsPage from './pages/owner/MyParkingsPage';
 import AddParkingPage from './pages/owner/AddParkingPage';
 import EditParkingPage from './pages/owner/EditParkingPage';
+
 
 function Layout() {
   return (
@@ -57,6 +60,7 @@ function App() {
           <Route path="dashboard" element={<UserDashboard />} />
           <Route path="parking/:id" element={<ParkingDetailsPage />} />
           <Route path="my-bookings" element={<MyBookingsPage />} />
+          <Route path="booking-history" element={<BookingHistoryPage />} />
         </Route>
 
         <Route path="/owner-dashboard" element={<ProtectedRoute allowedRoles={['owner']} />}>

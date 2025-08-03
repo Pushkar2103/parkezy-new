@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
-const CarIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 16.5V18a2 2 0 0 1-2 2h-4a2 2 0 0 1-2-2v-1.5"/><path d="M4 10h16"/><path d="M4 6h16"/><path d="M19 6a2 2 0 0 0-2-2H7a2 2 0 0 0-2 2v4l-3 6v2h22v-2l-3-6V6Z"/></svg>;
+const CarIcon = () => <img width="50" height="50" src="https://img.icons8.com/ios/50/car--v1.png" alt="car--v1"/>;
 const UserCircleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-8 h-8 text-gray-500 group-hover:text-blue-600 transition"><path strokeLinecap="round" strokeLinejoin="round" d="M17.982 18.725A7.488 7.488 0 0012 15.75a7.488 7.488 0 00-5.982 2.975m11.963 0a9 9 0 10-11.963 0m11.963 0A8.966 8.966 0 0112 21a8.966 8.966 0 01-5.982-2.275M15 9.75a3 3 0 11-6 0 3 3 0 016 0z" /></svg>;
 const ChevronDownIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor" className="w-4 h-4 ml-1 text-gray-500 group-hover:text-blue-600 transition"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 8.25l-7.5 7.5-7.5-7.5" /></svg>;
 
@@ -29,12 +29,13 @@ const ProfileDropdown = () => {
     }, [dropdownRef]);
 
     const dashboardPath = user?.role === 'owner' ? '/owner-dashboard' : '/dashboard';
+    const avatarUrl = user.profilePicture || `https://ui-avatars.com/api/?name=${user.name.replace(' ', '+')}&background=random&color=fff`;
 
     return (
         <div className="relative" ref={dropdownRef}>
             <button onClick={() => setIsOpen(!isOpen)} className="group flex items-center space-x-2">
                 <div className="relative">
-                    <UserCircleIcon />
+                    <img src={avatarUrl} alt="Profile" className="w-9 h-9 rounded-full object-cover border-2 border-gray-300 group-hover:border-blue-500 transition" />
                     {user?.role === 'owner' && requestCount > 0 && (
                         <span className="absolute top-0 right-0 block h-3 w-3 rounded-full bg-red-500 border-2 border-white"></span>
                     )}
@@ -53,7 +54,12 @@ const ProfileDropdown = () => {
                         <NavLink to={dashboardPath} onClick={() => setIsOpen(false)} className={({isActive}) => `block px-4 py-2 text-sm text-gray-700 hover:bg-blue-500 hover:text-white ${isActive && 'bg-blue-50'}`}>Dashboard</NavLink>
                         <NavLink to="/profile" onClick={() => setIsOpen(false)} className={({isActive}) => `block px-4 py-2 text-sm text-gray-700 hover:bg-blue-500 hover:text-white ${isActive && 'bg-blue-50'}`}>My Profile</NavLink>
                         {user.role === 'owner' && <NavLink to="/owner-dashboard/requests" onClick={() => setIsOpen(false)} className={({isActive}) => `flex justify-between items-center px-4 py-2 text-sm text-gray-700 hover:bg-blue-500 hover:text-white ${isActive && 'bg-blue-50'}`}>Requests {requestCount > 0 && <span className="bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">{requestCount}</span>}</NavLink>}
-                        {user.role === 'user' && <NavLink to="/my-bookings" onClick={() => setIsOpen(false)} className={({isActive}) => `block px-4 py-2 text-sm text-gray-700 hover:bg-blue-500 hover:text-white ${isActive && 'bg-blue-50'}`}>My Bookings</NavLink>}
+                        {user.role === 'user' && (
+                            <>
+                                <NavLink to="/my-bookings" onClick={() => setIsOpen(false)} className={({isActive}) => `block px-4 py-2 text-sm text-gray-700 hover:bg-blue-500 hover:text-white ${isActive && 'bg-blue-50'}`}>My Bookings</NavLink>
+                                <NavLink to="/booking-history" onClick={() => setIsOpen(false)} className={({isActive}) => `block px-4 py-2 text-sm text-gray-700 hover:bg-blue-500 hover:text-white ${isActive && 'bg-blue-50'}`}>Booking History</NavLink>
+                            </>
+                        )}
                     </div>
                     <div className="border-t">
                         <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-500 hover:text-white">Logout</button>
@@ -67,7 +73,7 @@ const ProfileDropdown = () => {
 const Header = () => {
   const { isAuthenticated } = useAuth();
   return (
-    <header className="bg-white shadow-md sticky top-0 z-40">
+    <header className="bg-white shadow-md sticky top-0 z-[1001]">
       <nav className="container mx-auto px-4 md:px-8 py-3 flex justify-between items-center">
         <Link to="/" className="flex items-center space-x-2">
           <CarIcon />

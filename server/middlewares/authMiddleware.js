@@ -14,7 +14,7 @@ export const auth = async (req, res, next) => {
         return res.status(401).json({ message: 'Not authorized, user not found' });
       }
       
-      next();
+      next();    
     } catch (error) {
       res.status(401).json({ message: 'Not authorized, token failed' });
     }

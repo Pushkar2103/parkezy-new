@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { apiService } from '../../api/apiService';
 import MapPicker from '../../components/MapPicker';
@@ -24,26 +24,32 @@ const InputField = ({ name, label, value, onChange, type = 'text', placeholder, 
     </div>
 );
 
-// --- Main Page Component ---
 const AddParkingPage = () => {
     const [formData, setFormData] = useState({
         name: '',
         totalSlots: '',
-        image: '',
         locationName: '',
         city: '',
         lat: '',
-        lng: ''
+        lng: '',
+        parkingImage: null // Field for the image file
     });
+    const [preview, setPreview] = useState(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const fileInputRef = useRef(null);
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
+        const { name, value, files } = e.target;
+        if (name === 'parkingImage' && files[0]) {
+            setFormData({ ...formData, parkingImage: files[0] });
+            setPreview(URL.createObjectURL(files[0]));
+        } else {
+            setFormData({ ...formData, [name]: value });
+        }
     };
 
-    // Callback function to update form with data from the map
     const handleLocationSelect = (location) => {
         setFormData(prevData => ({
             ...prevData,
@@ -61,7 +67,6 @@ const AddParkingPage = () => {
         try {
             const response = await apiService.createParkingArea(formData);
             if (response._id) {
-                // On success, navigate to the list of parkings
                 navigate('/owner-dashboard/parkings');
             } else {
                 setError(response.message || 'Failed to create parking area.');
@@ -77,32 +82,35 @@ const AddParkingPage = () => {
         <div className="bg-white p-8 rounded-xl shadow-lg max-w-4xl mx-auto">
             <h2 className="text-2xl font-bold mb-6">Add a New Parking Area</h2>
             {error && <div className="text-red-500 bg-red-100 p-3 rounded-md mb-4">{error}</div>}
-            
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Left Side: Form Fields */}
                 <form onSubmit={handleSubmit} className="space-y-4">
-                    <InputField name="name" label="Parking Area Name" value={formData.name} onChange={handleChange} placeholder="e.g., Downtown Central Parking" required />
-                    <InputField name="totalSlots" label="Total Number of Slots" type="number" value={formData.totalSlots} onChange={handleChange} placeholder="e.g., 50" required />
-                    <InputField name="image" label="Image URL" value={formData.image} onChange={handleChange} placeholder="https://example.com/image.png" />
+                    <InputField name="name" label="Parking Area Name" value={formData.name} onChange={handleChange} required />
+                    <InputField name="totalSlots" label="Total Slots" type="number" value={formData.totalSlots} onChange={handleChange} required />
                     
-                    <div className="pt-4 border-t">
-                        <h3 className="font-semibold text-lg mb-2">Location Details</h3>
-                        <p className="text-sm text-gray-500 mb-2">Fields below are auto-filled from the map. You can edit them if needed.</p>
-                        <InputField name="locationName" label="Location Name / Street" value={formData.locationName} onChange={handleChange} placeholder="Auto-filled from map" required />
-                        <InputField name="city" label="City" value={formData.city} onChange={handleChange} placeholder="Auto-filled from map" required />
-                        <div className="grid grid-cols-2 gap-4">
-                            <InputField name="lat" label="Latitude" value={formData.lat} onChange={handleChange} placeholder="Auto-filled" readOnly />
-                            <InputField name="lng" label="Longitude" value={formData.lng} onChange={handleChange} placeholder="Auto-filled" readOnly />
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">Parking Image</label>
+                        <div className="mt-1 flex items-center">
+                            <span className="inline-block h-20 w-20 rounded-md overflow-hidden bg-gray-100">
+                                {preview ? <img src={preview} alt="Preview" className="h-full w-full object-cover" /> : <svg className="h-full w-full text-gray-300" fill="currentColor" viewBox="0 0 24 24"><path d="M24 20.993V24H0v-2.993A2 2 0 002 18h20a2 2 0 002 2.993zM12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" /></svg>}
+                            </span>
+                            <input type="file" name="parkingImage" ref={fileInputRef} onChange={handleChange} className="hidden" accept="image/*" />
+                            <button type="button" onClick={() => fileInputRef.current.click()} className="ml-5 bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50">Choose File</button>
                         </div>
                     </div>
 
-                    <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-blue-400 flex items-center justify-center mt-4">
-                        <PlusCircleIcon />
-                        {loading ? 'Creating...' : 'Create Parking Area'}
+                    <div className="pt-4 border-t">
+                        <h3 className="font-semibold text-lg mb-2">Location Details</h3>
+                        <InputField name="locationName" label="Location Name / Street" value={formData.locationName} onChange={handleChange} required />
+                        <InputField name="city" label="City" value={formData.city} onChange={handleChange} required />
+                        <div className="grid grid-cols-2 gap-4">
+                            <InputField name="lat" label="Latitude" value={formData.lat} onChange={handleChange} readOnly />
+                            <InputField name="lng" label="Longitude" value={formData.lng} onChange={handleChange} readOnly />
+                        </div>
+                    </div>
+                    <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center mt-4">
+                        <PlusCircleIcon /> {loading ? 'Creating...' : 'Create Parking Area'}
                     </button>
                 </form>
-
-                {/* Right Side: Map */}
                 <div>
                     <h3 className="font-semibold text-lg mb-2">Pin Location on Map</h3>
                     <p className="text-sm text-gray-500 mb-2">Search, use your current location, or click on the map to set the pin.</p>

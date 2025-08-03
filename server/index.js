@@ -1,7 +1,11 @@
+import dotenv from 'dotenv'
+
+dotenv.config();
+
 import express from 'express'
 import mongoose from 'mongoose'
 import cors from 'cors'
-import dotenv from 'dotenv'
+
 import authRoutes from './routes/authRoutes.js'
 import { initScheduledJobs } from './services/cronJobs.js';
 import bookingRoutes from './routes/bookingRoutes.js'
@@ -10,17 +14,15 @@ import userRoutes from './routes/userRoutes.js'
 import profileRoutes from './routes/profileRoutes.js'
 
 
-dotenv.config()
 const app = express()
-initScheduledJobs();
-
-app.use(cors())
 app.use(express.json())
+app.use(cors())
+
+app.use('/api/profile', profileRoutes)
 app.use('/api/auth', authRoutes)
 app.use('/api/bookings', bookingRoutes) 
 app.use('/api/parking-areas', parkingRoutes) 
 app.use('/api/user', userRoutes)
-app.use('/api/profile', profileRoutes)
 
 app.get('/', (req, res) => {
   res.send('Parkezy Backend Running')
@@ -31,6 +33,8 @@ const MONGO_URI = process.env.MONGO_URI
 
 mongoose.connect(MONGO_URI).then(() => {
   app.listen(PORT, () => console.log(`Server running on port ${PORT}`))
+  initScheduledJobs();
 }).catch(err => {
-  console.error('MongoDB connection error:', err)
+  console.error('MongoDB connection error:', err);
+  process.exit(1);
 })

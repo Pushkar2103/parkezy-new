@@ -7,16 +7,17 @@ const userSchema = new mongoose.Schema({
   password: { type: String, required: true },
   role: { type: String, enum: ['user', 'owner'], default: 'user' },
   
-  // Fields for email verification
+  profilePicture: { 
+    type: String, 
+    default: './user.png' 
+  },
+
   isVerified: { type: Boolean, default: false },
   verificationToken: String,
-
-  // Fields for password reset
   passwordResetToken: String,
   passwordResetExpires: Date,
 }, { timestamps: true });
 
-// Method to generate a password reset token
 userSchema.methods.createPasswordResetToken = function() {
   const resetToken = crypto.randomBytes(32).toString('hex');
   
@@ -25,9 +26,9 @@ userSchema.methods.createPasswordResetToken = function() {
     .update(resetToken)
     .digest('hex');
   
-  this.passwordResetExpires = Date.now() + 10 * 60 * 1000; // Expires in 10 minutes
+  this.passwordResetExpires = Date.now() + 10 * 60 * 1000;
   
-  return resetToken; // Return the unhashed token to be sent via email
+  return resetToken;
 };
 
 userSchema.methods.createVerificationToken = function() {
@@ -38,7 +39,7 @@ userSchema.methods.createVerificationToken = function() {
         .update(verificationToken)
         .digest('hex');
 
-    return verificationToken; 
+    return verificationToken;
 };
 
 

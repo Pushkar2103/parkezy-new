@@ -14,12 +14,20 @@ export const register = async (req, res) => {
     }
 
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ name, email, password: hashedPassword, role });
+
+    const defaultProfilePic = `./asets/user.png`; 
+
+    const newUser = new User({ 
+        name, 
+        email, 
+        password: hashedPassword, 
+        role,
+        profilePicture: defaultProfilePic 
+    });
 
     const verificationToken = newUser.createVerificationToken();
     await newUser.save();
 
-    // The URL should point to your frontend route for verification
     const verifyURL = `${process.env.FRONTEND_URL}/verify-email/${verificationToken}`;
     const message = `Welcome to Parkezy! Please click the following link to verify your email address: ${verifyURL}\nIf you did not create this account, please ignore this email.`;
 
