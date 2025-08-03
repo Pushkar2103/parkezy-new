@@ -4,7 +4,8 @@ import {
   getParkingAreaDetails,
   bookSlot,
   getUserBookings,
-  getUserBookingHistory
+  getUserBookingHistory,
+  getSlotAvailability
 } from '../controllers/userController.js';
 import { auth, userAuth } from '../middlewares/authMiddleware.js';
 
@@ -18,5 +19,6 @@ router.get('/parking-areas/:id', getParkingAreaDetails);
 router.post('/book-slot', auth, userAuth, bookSlot);
 router.get('/bookings', auth, userAuth, getUserBookings);
 router.get('/bookings/history', auth, userAuth, getUserBookingHistory);
+router.get('/slots/:slotId/availability', auth, userAuth, getSlotAvailability);
 
 export default router;

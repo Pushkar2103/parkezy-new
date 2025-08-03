@@ -243,6 +243,13 @@ class ApiService {
         });
         return response.json();
     }
+
+      getSlotAvailability = async (slotId) => {
+        const response = await fetch(`${this.baseUrl}/user/slots/${slotId}/availability`, {
+            headers: this.getHeaders(),
+        });
+        return response.json();
+    }
 }
 
 export const apiService = new ApiService();

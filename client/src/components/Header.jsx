@@ -33,7 +33,7 @@ const ProfileDropdown = () => {
 
     return (
         <div className="relative" ref={dropdownRef}>
-            <button onClick={() => setIsOpen(!isOpen)} className="group flex items-center space-x-2">
+            <button onClick={() => setIsOpen(!isOpen)} className="group cursor-pointer flex items-center space-x-2">
                 <div className="relative">
                     <img src={avatarUrl} alt="Profile" className="w-9 h-9 rounded-full object-cover border-2 border-gray-300 group-hover:border-blue-500 transition" />
                     {user?.role === 'owner' && requestCount > 0 && (
@@ -62,7 +62,7 @@ const ProfileDropdown = () => {
                         )}
                     </div>
                     <div className="border-t">
-                        <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-500 hover:text-white">Logout</button>
+                        <button onClick={handleLogout} className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-500 cursor-pointer hover:text-white">Logout</button>
                     </div>
                 </div>
             )}
@@ -84,8 +84,8 @@ const Header = () => {
             <ProfileDropdown />
           ) : (
             <div className="flex items-center space-x-2">
-              <NavLink to="/login" className="text-gray-600 hover:text-blue-600 font-medium py-2 px-3 rounded-md">Login</NavLink>
-              <NavLink to="/register" className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded-lg transition duration-300">Register</NavLink>
+              <NavLink to="/login" className="text-gray-600 hover:text-blue-600 cursor-pointer font-medium py-2 px-3 rounded-md">Login</NavLink>
+              <NavLink to="/register" className="bg-blue-600 hover:bg-blue-700 cursor-pointer text-white font-bold py-2 px-4 rounded-lg transition duration-300">Register</NavLink>
             </div>
           )}
         </div>

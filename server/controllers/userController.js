@@ -214,3 +214,22 @@ export const getUserBookingHistory = async (req, res) => {
         res.status(500).json({ message: 'Server error while fetching booking history', error: error.message });
     }
 };
+
+export const getSlotAvailability = async (req, res) => {
+    try {
+        const { slotId } = req.params;
+        const slot = await ParkingSlot.findById(slotId);
+
+        if (!slot) {
+            return res.status(404).json({ message: 'Slot not found.' });
+        }
+
+        res.status(200).json({ 
+            isAvailable: slot.isAvailable,
+            areaId: slot.areaId 
+        });
+    } catch (error) {
+        console.error("Error in getSlotAvailability:", error);
+        res.status(500).json({ message: 'Server error while checking slot availability.' });
+    }
+};

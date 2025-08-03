@@ -110,8 +110,8 @@ const MyParkingsPage = () => {
                                     </div>
                                 </div>
                                 <div className="flex space-x-2">
-                                    <button onClick={() => navigate(`/owner-dashboard/parkings/edit/${p._id}`)} className="text-sm bg-blue-500 text-white py-2 px-3 rounded-md hover:bg-blue-600 flex items-center"><PencilIcon /> Edit</button>
-                                    <button onClick={() => handleDeleteClick(p)} className="text-sm bg-red-500 text-white py-2 px-3 rounded-md hover:bg-red-600 flex items-center"><TrashIcon /> Delete</button>
+                                    <button onClick={() => navigate(`/owner-dashboard/parkings/edit/${p._id}`)} className="text-sm cursor-pointer bg-blue-500 text-white py-2 px-3 rounded-md hover:bg-blue-600 flex items-center"><PencilIcon /> Edit</button>
+                                    <button onClick={() => handleDeleteClick(p)} className="text-sm bg-red-500 text-white py-2 px-3 rounded-md cursor-pointer hover:bg-red-600 flex items-center"><TrashIcon /> Delete</button>
                                 </div>
                             </div>
                         ))}

@@ -14,8 +14,8 @@ const RequestList = ({ title, requests, type, onResponse }) => (
                         <p className="text-sm text-gray-600">Slot: {req.parkingSlot.slotNumber}</p>
                         <p className="text-sm text-gray-600">Car No: {req.carNumber}</p>
                         <div className="flex justify-end space-x-2 mt-2">
-                            <button onClick={() => onResponse(type, req._id, 'deny')} className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 rounded-md">Deny</button>
-                            <button onClick={() => onResponse(type, req._id, 'approve')} className="text-sm bg-green-500 hover:bg-green-600 text-white font-bold py-1 px-3 rounded-md">Approve</button>
+                            <button onClick={() => onResponse(type, req._id, 'deny')} className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-3 cursor-pointer rounded-md">Deny</button>
+                            <button onClick={() => onResponse(type, req._id, 'approve')} className="text-sm bg-green-500 hover:bg-green-600 text-white cursor-pointer font-bold py-1 px-3 rounded-md">Approve</button>
                         </div>
                     </div>
                 ))}

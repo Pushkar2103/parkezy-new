@@ -77,14 +77,14 @@ const EditParkingPage = () => {
                             <img src={preview || currentImage || 'https://placehold.co/200x200/e2e8f0/4a5568?text=No+Img'} alt="Preview" className="h-full w-full object-cover" />
                         </span>
                         <input type="file" name="parkingImage" ref={fileInputRef} onChange={handleChange} className="hidden" accept="image/*" />
-                        <button type="button" onClick={() => fileInputRef.current.click()} className="ml-5 bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 hover:bg-gray-50">Change Image</button>
+                        <button type="button" onClick={() => fileInputRef.current.click()} className="ml-5 bg-white py-2 px-3 border border-gray-300 rounded-md shadow-sm text-sm leading-4 font-medium text-gray-700 cursor-pointer hover:bg-gray-50">Change Image</button>
                     </div>
                 </div>
                 <div className="flex items-center space-x-4 pt-4">
-                    <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg flex items-center justify-center">
+                    <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 cursor-pointer px-4 rounded-lg flex items-center justify-center">
                         <PencilIcon /> {loading ? 'Saving...' : 'Save Changes'}
                     </button>
-                    <button type="button" onClick={() => navigate('/owner-dashboard/parkings')} className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg">Cancel</button>
+                    <button type="button" onClick={() => navigate('/owner-dashboard/parkings')} className="w-full bg-gray-200 hover:bg-gray-300 cursor-pointer text-gray-800 font-bold py-3 px-4 rounded-lg">Cancel</button>
                 </div>
             </form>
         </div>
