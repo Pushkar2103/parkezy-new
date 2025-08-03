@@ -35,14 +35,12 @@ export const apiService = {
     setToken,
     clearToken,
 
-    // --- Auth Methods ---
     register: (name, email, password, role) => api.post('/auth/register', { name, email, password, role }),
     verifyEmail: (verificationToken) => api.get(`/auth/verify-email/${verificationToken}`),
     login: (email, password) => api.post('/auth/login', { email, password }),
     forgotPassword: (email) => api.post('/auth/forgot-password', { email }),
     resetPassword: (token, password) => api.patch(`/auth/reset-password/${token}`, { password }),
 
-    // --- User Methods ---
     getParkingAreas: (searchTerm = '', lat, lng, radius = 10) => {
         return api.get('/user/parking-areas', {
             params: { search: searchTerm, lat, lng, radius },
@@ -56,7 +54,6 @@ export const apiService = {
     requestBookingCompletion: (bookingId) => api.put(`/bookings/${bookingId}/request-completion`),
     getSlotAvailability: (slotId) => api.get(`/user/slots/${slotId}/availability`),
 
-    // --- Owner Methods ---
     getOwnerStats: () => api.get('/parking-areas/owner/stats'),
     getOwnerParkingAreas: () => api.get('/parking-areas/owner'),
     createParkingArea: (data) => {
