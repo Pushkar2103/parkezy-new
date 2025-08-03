@@ -1,21 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { MapContainer, TileLayer, Marker, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
-import axios from 'axios'; 
+import axios from 'axios';
 import GeoSearchField from './GeoSearchField';
 
-
-const CrosshairsIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" /></svg>;
+const CrosshairsIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+    <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+    <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+  </svg>
+);
 
 const ErrorBanner = ({ message }) => {
-    if (!message) return null;
-    return (
-        <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[1000] bg-red-500 text-white text-sm font-semibold py-2 px-4 rounded-md shadow-lg">
-            {message}
-        </div>
-    );
+  if (!message) return null;
+  return (
+    <div className="absolute top-2 left-1/2 -translate-x-1/2 z-[1000] bg-red-500 text-white text-sm font-semibold py-2 px-4 rounded-md shadow-lg">
+      {message}
+    </div>
+  );
 };
-
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -24,62 +27,59 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.7.1/dist/images/marker-shadow.png',
 });
 
+function LocationMarker({ position }) {
+  return position ? <Marker position={position} /> : null;
+}
 
-function LocationMarker({ position, setPosition, onLocationSelect, setMapError }) {
-  const map = useMapEvents({
-    click(e) {
-      setPosition(e.latlng);
-    },
-  });
-
-  useEffect(() => {
-    if (position) {
-      map.flyTo(position, map.getZoom());
-      const fetchAddress = async () => {
-        setMapError(null); // Clear previous errors on new action
-        try {
-          const response = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${position.lat}&lon=${position.lng}`, { timeout: 5000 }); // Added a 5-second timeout
-          const address = response.data.address || {};
-          onLocationSelect({
-            lat: position.lat.toFixed(6),
-            lng: position.lng.toFixed(6),
-            city: address.city || address.town || address.village || '',
-            locationName: address.road || address.suburb || address.neighbourhood || 'Unknown Location'
-          });
-        } catch (error) {
-          console.error("Reverse geocoding failed:", error);
-          setMapError("Location service is unavailable. Please try again later.");
-          onLocationSelect({ lat: position.lat.toFixed(6), lng: position.lng.toFixed(6), city: '', locationName: '' });
-        }
-      };
-      fetchAddress();
+function ClickHandler({ setPosition, setMapError, onLocationSelect }) {
+  useMapEvents({
+    click: async (e) => {
+      const latlng = e.latlng;
+      setPosition(latlng);
+      try {
+        setMapError(null);
+        const response = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latlng.lat}&lon=${latlng.lng}`, { timeout: 5000 });
+        const address = response.data.address || {};
+        onLocationSelect({
+          lat: latlng.lat.toFixed(6),
+          lng: latlng.lng.toFixed(6),
+          city: address.city || address.town || address.village || '',
+          locationName: address.road || address.suburb || address.neighbourhood || 'Unknown Location'
+        });
+      } catch (error) {
+        console.error("Reverse geocoding failed:", error);
+        setMapError("Location service is unavailable. Please try again later.");
+        onLocationSelect({
+          lat: latlng.lat.toFixed(6),
+          lng: latlng.lng.toFixed(6),
+          city: '',
+          locationName: ''
+        });
+      }
     }
-  }, [position, map, onLocationSelect, setMapError]);
-
-  return position === null ? null : <Marker position={position}></Marker>;
+  });
+  return null;
 }
 
 function LocateControl({ setPosition, setMapError }) {
-    const map = useMap();
-    const handleLocateMe = () => {
-        setMapError(null); // Clear previous errors
-        map.locate().on('locationfound', (e) => {
-            setPosition(e.latlng);
-            map.flyTo(e.latlng, 16);
-        }).on('locationerror', (error) => {
-            console.error("Location error:", error);
-            setMapError('Could not access your location. Please enable location services.');
-        });
-    };
+  const map = useMap();
+  const handleLocateMe = () => {
+    setMapError(null);
+    map.locate().on('locationfound', (e) => {
+      setPosition(e.latlng);
+      map.flyTo(e.latlng, 16);
+    }).on('locationerror', (error) => {
+      console.error("Location error:", error);
+      setMapError('Could not access your location. Please enable location services.');
+    });
+  };
 
-    return (
-        <button onClick={handleLocateMe} className="absolute bottom-4 right-4 z-[1000] bg-white p-2 rounded-full shadow-lg hover:bg-gray-100 transition cursor-pointer" title="Locate Me">
-            <CrosshairsIcon />
-        </button>
-    );
+  return (
+    <button onClick={handleLocateMe} className="absolute bottom-4 right-4 z-[1000] bg-white p-2 rounded-full shadow-lg hover:bg-gray-100 transition cursor-pointer" title="Locate Me">
+      <CrosshairsIcon />
+    </button>
+  );
 }
-
-// --- MAIN MAP COMPONENT ---
 
 const MapPicker = ({ onLocationSelect }) => {
   const initialCenter = [26.8467, 80.9462]; // Lucknow, India
@@ -88,30 +88,41 @@ const MapPicker = ({ onLocationSelect }) => {
 
   useEffect(() => {
     if (mapError) {
-        const timer = setTimeout(() => {
-            setMapError(null);
-        }, 7000); // Error message will disappear after 7 seconds
-
-        return () => clearTimeout(timer);
+      const timer = setTimeout(() => setMapError(null), 7000);
+      return () => clearTimeout(timer);
     }
   }, [mapError]);
 
+  const handleGeoSearch = async ({ lat, lng }) => {
+    const latlng = { lat: parseFloat(lat), lng: parseFloat(lng) };
+    setPosition(latlng);
+    try {
+      const response = await axios.get(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}`, { timeout: 5000 });
+      const address = response.data.address || {};
+      onLocationSelect({
+        lat: lat.toFixed(6),
+        lng: lng.toFixed(6),
+        city: address.city || address.town || address.village || '',
+        locationName: address.road || address.suburb || address.neighbourhood || 'Unknown Location'
+      });
+    } catch (error) {
+      console.error("Reverse geocoding failed (GeoSearch):", error);
+      setMapError("Location service is unavailable. Please try again later.");
+    }
+  };
+
   return (
     <div className="h-96 w-full rounded-lg overflow-hidden shadow-md z-0 relative">
-      <MapContainer center={initialCenter} zoom={13} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
+      <MapContainer center={initialCenter} zoom={13} scrollWheelZoom style={{ height: '100%', width: '100%' }}>
         <TileLayer
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
           url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
         />
         <ErrorBanner message={mapError} />
-        <GeoSearchField />
+        <GeoSearchField onLocationSelect={handleGeoSearch} />
         <LocateControl setPosition={setPosition} setMapError={setMapError} />
-        <LocationMarker 
-            position={position} 
-            setPosition={setPosition} 
-            onLocationSelect={onLocationSelect} 
-            setMapError={setMapError}
-        />
+        <LocationMarker position={position} />
+        <ClickHandler setPosition={setPosition} setMapError={setMapError} onLocationSelect={onLocationSelect} />
       </MapContainer>
     </div>
   );

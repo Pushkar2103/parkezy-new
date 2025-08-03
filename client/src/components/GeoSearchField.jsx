@@ -3,7 +3,7 @@ import { useMap } from 'react-leaflet';
 import { GeoSearchControl, OpenStreetMapProvider } from 'leaflet-geosearch';
 import 'leaflet-geosearch/dist/geosearch.css';
 
-const GeoSearchField = () => {
+const GeoSearchField = ({ onLocationSelect }) => {
   const map = useMap();
 
   useEffect(() => {
@@ -23,13 +23,24 @@ const GeoSearchField = () => {
 
     map.addControl(searchControl);
 
-    map.on('geosearch/showlocation', (result) => {
-    });
+    const handleLocation = (result) => {
+      const { x: lng, y: lat, label } = result.location;
+      const labelParts = label.split(',').map(part => part.trim());
+      const locationName = labelParts[0] || '';
+      const city = labelParts[labelParts.length - 3] || '';
 
-    return () => map.removeControl(searchControl);
-  }, [map]);
+      onLocationSelect({ lat, lng, locationName, city });
+    };
 
-  return null; 
+    map.on('geosearch/showlocation', handleLocation);
+
+    return () => {
+      map.removeControl(searchControl);
+      map.off('geosearch/showlocation', handleLocation);
+    };
+  }, [map, onLocationSelect]);
+
+  return null;
 };
 
 export default GeoSearchField;
