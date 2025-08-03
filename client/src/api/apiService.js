@@ -1,17 +1,26 @@
+import axios from 'axios';
+
 class ApiService {
     constructor() {
-        this.baseUrl = '/api';
+        const baseURL = import.meta.env.VITE_API_BASE_URL || '/api';
+
         this.token = localStorage.getItem('parkezy_token');
+
+        this.axiosInstance = axios.create({
+            baseURL,
+            headers: {
+                'Content-Type': 'application/json',
+            },
+        });
+
+        this.axiosInstance.interceptors.request.use(config => {
+            if (this.token) {
+                config.headers.Authorization = `Bearer ${this.token}`;
+            }
+            return config;
+        });
     }
 
-    getHeaders = () => {
-        const headers = { 'Content-Type': 'application/json' };
-        if (this.token) {
-            headers['Authorization'] = `Bearer ${this.token}`;
-        }
-        return headers;
-    }
-    
     setToken = (token) => {
         this.token = token;
         localStorage.setItem('parkezy_token', token);
@@ -19,237 +28,124 @@ class ApiService {
 
     clearToken = () => {
         this.token = null;
+        localStorage.removeItem('parkezy_token');
     }
 
     // --- Auth Methods ---
-    register = async (name, email, password, role) => {
-        const response = await fetch(`${this.baseUrl}/auth/register`, {
-            method: 'POST',
-            headers: this.getHeaders(),
-            body: JSON.stringify({ name, email, password, role }),
-        });
-        return response.json();
-    }
-    verifyEmail = async (verificationToken) => {
-        const response = await fetch(`${this.baseUrl}/auth/verify-email/${verificationToken}`, {
-            method: 'GET',
-            headers: this.getHeaders(),
-        });
-        return response.json();
-    }
-    login = async (email, password) => {
-        const response = await fetch(`${this.baseUrl}/auth/login`, {
-            method: 'POST',
-            headers: this.getHeaders(),
-            body: JSON.stringify({ email, password }),
-        });
-        return response.json();
-    }
-    forgotPassword = async (email) => {
-        const response = await fetch(`${this.baseUrl}/auth/forgot-password`, {
-            method: 'POST',
-            headers: this.getHeaders(),
-            body: JSON.stringify({ email }),
-        });
-        return response.json();
-    }
-    resetPassword = async (token, password) => {
-        const response = await fetch(`${this.baseUrl}/auth/reset-password/${token}`, {
-            method: 'PATCH',
-            headers: this.getHeaders(),
-            body: JSON.stringify({ password }),
-        });
-        return response.json();
-    }
+    register = (name, email, password, role) =>
+        this.axiosInstance.post('/auth/register', { name, email, password, role });
+
+    verifyEmail = (token) =>
+        this.axiosInstance.get(`/auth/verify-email/${token}`);
+
+    login = (email, password) =>
+        this.axiosInstance.post('/auth/login', { email, password });
+
+    forgotPassword = (email) =>
+        this.axiosInstance.post('/auth/forgot-password', { email });
+
+    resetPassword = (token, password) =>
+        this.axiosInstance.patch(`/auth/reset-password/${token}`, { password });
 
     // --- User Methods ---
-    getParkingAreas = async (searchTerm = '', lat, lng, radius = 10) => {
-        const url = new URL(`${window.location.origin}${this.baseUrl}/user/parking-areas`);
-        if (searchTerm) url.searchParams.append('search', searchTerm);
-        if (lat) url.searchParams.append('lat', lat);
-        if (lng) url.searchParams.append('lng', lng);
-        if (radius) url.searchParams.append('radius', radius);
-        
-        const response = await fetch(url.toString(), {
-            headers: this.getHeaders(),
-        });
-        return response.json();
-    }
-    getParkingAreaDetails = async (areaId) => {
-        const response = await fetch(`${this.baseUrl}/user/parking-areas/${areaId}`, {
-            headers: this.getHeaders(),
-        });
-        return response.json();
-    }
-    bookSlot = async (bookingData) => {
-        const response = await fetch(`${this.baseUrl}/user/book-slot`, {
-            method: 'POST',
-            headers: this.getHeaders(),
-            body: JSON.stringify(bookingData),
-        });
-        return response.json();
-    }
-    getUserBookings = async () => {
-        const response = await fetch(`${this.baseUrl}/user/bookings`, {
-            headers: this.getHeaders(),
-        });
-        return response.json();
-    }
-    requestBookingCancellation = async (bookingId) => {
-        const response = await fetch(`${this.baseUrl}/bookings/${bookingId}/request-cancellation`, {
-            method: 'PUT',
-            headers: this.getHeaders(),
-        });
-        return response.json();
-    }
-    requestBookingCompletion = async (bookingId) => {
-        const response = await fetch(`${this.baseUrl}/bookings/${bookingId}/request-completion`, {
-            method: 'PUT',
-            headers: this.getHeaders(),
-        });
-        return response.json();
-    }
+    getParkingAreas = (searchTerm = '', lat, lng, radius = 10) => {
+        const params = {};
+        if (searchTerm) params.search = searchTerm;
+        if (lat) params.lat = lat;
+        if (lng) params.lng = lng;
+        if (radius) params.radius = radius;
+        return this.axiosInstance.get('/user/parking-areas', { params });
+    };
+
+    getParkingAreaDetails = (areaId) =>
+        this.axiosInstance.get(`/user/parking-areas/${areaId}`);
+
+    bookSlot = (bookingData) =>
+        this.axiosInstance.post('/user/book-slot', bookingData);
+
+    getUserBookings = () =>
+        this.axiosInstance.get('/user/bookings');
+
+    requestBookingCancellation = (bookingId) =>
+        this.axiosInstance.put(`/bookings/${bookingId}/request-cancellation`);
+
+    requestBookingCompletion = (bookingId) =>
+        this.axiosInstance.put(`/bookings/${bookingId}/request-completion`);
 
     // --- Owner Methods ---
-    getOwnerStats = async () => {
-        const response = await fetch(`${this.baseUrl}/parking-areas/owner/stats`, {
-            headers: this.getHeaders(),
-        });
-        return response.json();
-    }
-    getOwnerParkingAreas = async () => {
-        const response = await fetch(`${this.baseUrl}/parking-areas/owner`, {
-            headers: this.getHeaders(),
-        });
-        return response.json();
-    }
+    getOwnerStats = () =>
+        this.axiosInstance.get('/parking-areas/owner/stats');
 
-    createParkingArea = async (data) => {
+    getOwnerParkingAreas = () =>
+        this.axiosInstance.get('/parking-areas/owner');
+
+    createParkingArea = (data) => {
         const formData = new FormData();
-        for (const key in data) {
+        Object.entries(data).forEach(([key, value]) => {
             if (key !== 'parkingImage') {
-                formData.append(key, data[key]);
+                formData.append(key, value);
             }
-        }
+        });
         if (data.parkingImage) {
             formData.append('parkingImage', data.parkingImage);
         }
 
-        const response = await fetch(`${this.baseUrl}/parking-areas`, {
-            method: 'POST',
-            headers: {
-                authorization: `Bearer ${this.token}`,
-            },
-            body: formData,
+        return this.axiosInstance.post('/parking-areas', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
         });
-        return response.json();
-    }
+    };
 
-    updateParkingArea = async (id, data) => {
+    updateParkingArea = (id, data) => {
         const formData = new FormData();
-        for (const key in data) {
+        Object.entries(data).forEach(([key, value]) => {
             if (key !== 'parkingImage') {
-                formData.append(key, data[key]);
+                formData.append(key, value);
             }
-        }
+        });
         if (data.parkingImage) {
             formData.append('parkingImage', data.parkingImage);
         }
 
-        const response = await fetch(`${this.baseUrl}/parking-areas/${id}`, {
-            method: 'PUT',
-            headers: {
-                authorization: `Bearer ${this.token}`,
-            },
-            body: formData,
+        return this.axiosInstance.put(`/parking-areas/${id}`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
         });
-        return response.json();
-    }
+    };
 
-    deleteParkingArea = async (id) => {
-        const response = await fetch(`${this.baseUrl}/parking-areas/${id}`, {
-            method: 'DELETE',
-            headers: this.getHeaders(),
-        });
-        return response.json();
-    }
-     getCancellationRequests = async () => {
-        const response = await fetch(`${this.baseUrl}/bookings/owner/cancellation-requests`, {
-            headers: this.getHeaders(),
-        });
-        return response.json();
-    }
+    deleteParkingArea = (id) =>
+        this.axiosInstance.delete(`/parking-areas/${id}`);
 
-    respondToCancellation = async (bookingId, decision) => {
-        const response = await fetch(`${this.baseUrl}/bookings/${bookingId}/respond-cancellation`, {
-            method: 'PUT',
-            headers: this.getHeaders(),
-            body: JSON.stringify({ decision }),
-        });
-        return response.json();
-    }
+    getCancellationRequests = () =>
+        this.axiosInstance.get('/bookings/owner/cancellation-requests');
 
-    getCompletionRequests = async () => {
-        const response = await fetch(`${this.baseUrl}/bookings/owner/completion-requests`, {
-            headers: this.getHeaders(),
-        });
-        return response.json();
-    }
-    
-    respondToCompletion = async (bookingId, decision) => {
-        const response = await fetch(`${this.baseUrl}/bookings/${bookingId}/respond-completion`, {
-            method: 'PUT',
-            headers: this.getHeaders(),
-            body: JSON.stringify({ decision }),
-        });
-        return response.json();
-    }
+    respondToCancellation = (bookingId, decision) =>
+        this.axiosInstance.put(`/bookings/${bookingId}/respond-cancellation`, { decision });
 
-     updateMyProfile = async (profileData) => {
-        const response = await fetch(`${this.baseUrl}/profile/update-me`, {
-            method: 'PUT',
-            headers: this.getHeaders(),
-            body: JSON.stringify(profileData),
-        });
-        return response.json();
-    }
+    getCompletionRequests = () =>
+        this.axiosInstance.get('/bookings/owner/completion-requests');
 
-    updateUserPassword = async (passwordData) => {
-        const response = await fetch(`${this.baseUrl}/profile/update-my-password`, {
-            method: 'PUT',
-            headers: this.getHeaders(),
-            body: JSON.stringify(passwordData),
-        });
-        return response.json();
-    }
+    respondToCompletion = (bookingId, decision) =>
+        this.axiosInstance.put(`/bookings/${bookingId}/respond-completion`, { decision });
 
-    getUserBookingHistory = async () => {
-        const response = await fetch(`${this.baseUrl}/user/bookings/history`, {
-            headers: this.getHeaders(),
-        });
-        return response.json();
-    }
+    updateMyProfile = (profileData) =>
+        this.axiosInstance.put('/profile/update-me', profileData);
 
-    uploadProfilePicture = async (file) => {
+    updateUserPassword = (passwordData) =>
+        this.axiosInstance.put('/profile/update-my-password', passwordData);
+
+    getUserBookingHistory = () =>
+        this.axiosInstance.get('/user/bookings/history');
+
+    uploadProfilePicture = (file) => {
         const formData = new FormData();
         formData.append('profilePic', file);
 
-        const response = await fetch(`${this.baseUrl}/profile/upload-picture`, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${this.token}`
-            },
-            body: formData,
+        return this.axiosInstance.post('/profile/upload-picture', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
         });
-        return response.json();
-    }
+    };
 
-      getSlotAvailability = async (slotId) => {
-        const response = await fetch(`${this.baseUrl}/user/slots/${slotId}/availability`, {
-            headers: this.getHeaders(),
-        });
-        return response.json();
-    }
+    getSlotAvailability = (slotId) =>
+        this.axiosInstance.get(`/user/slots/${slotId}/availability`);
 }
 
 export const apiService = new ApiService();
