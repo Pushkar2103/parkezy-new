@@ -1,7 +1,6 @@
 import React from "react";
 import { Link } from "react-router-dom";
 
-// --- ICONS ---
 const SearchIcon = () => (
   <img width="50" height="50" src="https://img.icons8.com/ios-filled/50/search.png" alt="search"/>
 );
@@ -123,7 +122,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* How It Works Section */}
       <section className="py-16 md:py-24 bg-white">
         <div className="container mx-auto px-4">
           <div className="text-center mb-12">
@@ -169,7 +167,6 @@ const LandingPage = () => {
         </div>
       </section>
 
-      {/* Final CTA Section */}
       <section className="bg-blue-600">
         <div className="container mx-auto px-4 py-16 text-center">
           <h2 className="text-3xl font-bold text-white mb-4">

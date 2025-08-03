@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { apiService } from '../api/apiService';
 
-// --- ICONS ---
 const CheckCircleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-16 w-16 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
 const EyeIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M2.036 12.322a1.012 1.012 0 010-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.432 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178z" /><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /></svg>;
 const EyeSlashIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5"><path strokeLinecap="round" strokeLinejoin="round" d="M3.98 8.223A10.477 10.477 0 001.934 12C3.226 16.338 7.244 19.5 12 19.5c.993 0 1.953-.138 2.863-.395M6.228 6.228A10.45 10.45 0 0112 4.5c4.756 0 8.773 3.162 10.065 7.498a10.523 10.523 0 01-4.293 5.774M6.228 6.228L3 3m3.228 3.228l3.65 3.65m7.894 7.894L21 21m-3.228-3.228l-3.65-3.65m0 0a3 3 0 10-4.243-4.243m4.243 4.243L6.228 6.228" /></svg>;
@@ -11,11 +10,12 @@ const LoadingSpinner = () => <svg className="animate-spin -ml-1 mr-3 h-5 w-5 tex
 const PasswordStrengthMeter = ({ password }) => {
     const getStrength = () => {
         let score = 0;
+        if (!password) return 0;
         if (password.length > 7) score++;
-        if (password.match(/[a-z]/)) score++;
-        if (password.match(/[A-Z]/)) score++;
-        if (password.match(/[0-9]/)) score++;
-        if (password.match(/[^A-Za-z0-9]/)) score++;
+        if (/[a-z]/.test(password)) score++;
+        if (/[A-Z]/.test(password)) score++;
+        if (/[0-9]/.test(password)) score++;
+        if (/[^A-Za-z0-9]/.test(password)) score++;
         return score;
     };
     const strength = getStrength();
@@ -87,13 +87,9 @@ const ResetPasswordPage = () => {
         setLoading(true);
         try {
             const response = await apiService.resetPassword(token, password);
-            if (response.token && response.user) {
-                setFeedback({ message: 'Password has been reset successfully!', type: 'success' });
-            } else {
-                setFeedback({ message: response.message || 'Failed to reset password. The link may be invalid or expired.', type: 'error' });
-            }
+            setFeedback({ message: response.data.message || 'Password has been reset successfully!', type: 'success' });
         } catch (err) {
-            setFeedback({ message: 'A server error occurred. Please try again later.', type: 'error' });
+            setFeedback({ message: err.response?.data?.message || 'Failed to reset password. The link may be invalid or expired.', type: 'error' });
         } finally {
             setLoading(false);
         }

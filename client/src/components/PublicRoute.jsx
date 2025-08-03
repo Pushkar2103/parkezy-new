@@ -1,16 +1,13 @@
 import React from 'react';
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import FullScreenLoader from './FullScreenLoader'; 
 
 const PublicRoute = () => {
   const { user, isAuthenticated, loading } = useAuth();
 
   if (loading) {
-    return (
-      <div className="flex justify-center items-center h-screen">
-        <div>Loading...</div>
-      </div>
-    );
+    return <FullScreenLoader />;
   }
 
   if (isAuthenticated) {

@@ -10,6 +10,34 @@ const CheckCircleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className=
 const XCircleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-red-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
 
 
+const Spinner = () => (
+    <div className="flex justify-center items-center py-8">
+        <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-blue-600"></div>
+    </div>
+);
+
+const BookingHistorySkeleton = () => (
+    <div className="space-y-6">
+        {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white p-6 rounded-xl shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 animate-pulse">
+                <div className="flex items-center w-full">
+                    <div className="w-24 h-24 rounded-md bg-gray-200 mr-4 hidden sm:block"></div>
+                    <div className="w-full">
+                        <div className="h-6 bg-gray-200 rounded w-3/4 mb-2"></div>
+                        <div className="h-4 bg-gray-200 rounded w-1/2 mb-3"></div>
+                        <div className="h-4 bg-gray-200 rounded w-2/3"></div>
+                    </div>
+                </div>
+                <div className="flex flex-col items-start sm:items-end w-full sm:w-auto mt-4 sm:mt-0">
+                    <div className="h-6 w-24 bg-gray-200 rounded-full mb-3"></div>
+                    <div className="h-10 w-40 bg-gray-200 rounded-md"></div>
+                </div>
+            </div>
+        ))}
+    </div>
+);
+
+
 const Notification = ({ message, type, onDismiss }) => {
     useEffect(() => {
         const timer = setTimeout(onDismiss, 4000);
@@ -25,43 +53,43 @@ const Notification = ({ message, type, onDismiss }) => {
     );
 };
 
-
 const RepeatBookingModal = ({ isOpen, onClose, slotId, showNotification }) => {
     const [availability, setAvailability] = useState({ loading: true, isAvailable: false, areaId: null });
     const [bookingDetails, setBookingDetails] = useState({ carNumber: '', startTime: '', endTime: '' });
     const [bookingLoading, setBookingLoading] = useState(false);
     const navigate = useNavigate();
 
+    const stableShowNotification = useCallback(showNotification, []);
     useEffect(() => {
         if (isOpen && slotId) {
             const checkAvailability = async () => {
                 setAvailability({ loading: true, isAvailable: false, areaId: null });
                 try {
                     const response = await apiService.getSlotAvailability(slotId);
-                    setAvailability({ loading: false, ...response });
+                    setAvailability({ loading: false, ...response.data });
                 } catch (error) {
                     setAvailability({ loading: false, isAvailable: false, areaId: null });
-                    showNotification('Could not check slot availability.', 'error');
+                    stableShowNotification('Could not check slot availability.', 'error');
                 }
             };
             checkAvailability();
         }
-    }, [isOpen, slotId, showNotification]);
+    }, [isOpen, slotId, stableShowNotification]);
 
     const handleBookingConfirm = async (e) => {
         e.preventDefault();
         setBookingLoading(true);
         try {
             const response = await apiService.bookSlot({ slotId, ...bookingDetails });
-            if (response.booking) {
+            if (response.data.booking) {
                 showNotification('Booking successful!', 'success');
                 onClose();
                 navigate('/my-bookings');
             } else {
-                showNotification(response.message || 'Failed to book slot.', 'error');
+                showNotification(response.data.message || 'Failed to book slot.', 'error');
             }
         } catch (error) {
-            showNotification('A server error occurred.', 'error');
+            showNotification(error.response?.data?.message || 'A server error occurred.', 'error');
         } finally {
             setBookingLoading(false);
         }
@@ -72,11 +100,11 @@ const RepeatBookingModal = ({ isOpen, onClose, slotId, showNotification }) => {
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-[1001] p-4">
             <div className="bg-white p-8 rounded-xl shadow-2xl max-w-lg w-full relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><CloseIcon /></button>
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800 cursor-pointer"><CloseIcon /></button>
                 <h2 className="text-3xl font-bold mb-4">Repeat Booking</h2>
                 
                 {availability.loading ? (
-                    <p>Checking slot availability...</p>
+                    <Spinner />
                 ) : availability.isAvailable ? (
                     <form onSubmit={handleBookingConfirm} className="space-y-4">
                         <p className="text-gray-600">This slot is available. Please confirm your details to book again.</p>
@@ -94,13 +122,13 @@ const RepeatBookingModal = ({ isOpen, onClose, slotId, showNotification }) => {
                                 <input type="datetime-local" name="endTime" value={bookingDetails.endTime} onChange={(e) => setBookingDetails({...bookingDetails, endTime: e.target.value})} required className="w-full px-3 py-2 border border-gray-300 rounded-md" />
                             </div>
                         </div>
-                        <button type="submit" disabled={bookingLoading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg disabled:bg-blue-400">{bookingLoading ? 'Booking...' : 'Confirm & Book'}</button>
+                        <button type="submit" disabled={bookingLoading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg disabled:bg-blue-400 cursor-pointer">{bookingLoading ? 'Booking...' : 'Confirm & Book'}</button>
                     </form>
                 ) : (
                     <div>
                         <p className="text-red-600 font-semibold mb-4">This slot is currently unavailable.</p>
                         <p className="text-gray-600 mb-6">Would you like to view other available slots at this location?</p>
-                        <Link to={`/parking/${availability.areaId}`} className="w-full block text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg">View Parking Area</Link>
+                        <Link to={`/parking/${availability.areaId}`} className="w-full block text-center bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-lg cursor-pointer">View Parking Area</Link>
                     </div>
                 )}
             </div>
@@ -110,20 +138,19 @@ const RepeatBookingModal = ({ isOpen, onClose, slotId, showNotification }) => {
 
 
 const HistoryCard = ({ booking, onRepeatBooking }) => {
-    const formatDateTime = (isoString) => new Date(isoString).toLocaleString(undefined, { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const formatDateTime = (isoString) => new Date(isoString).toLocaleString('en-IN', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', hour12: true });
 
     const getStatusChip = (status) => {
-        const styles = {
-            cancelled: 'bg-red-100 text-red-800',
-            completed: 'bg-green-100 text-green-800',
-        };
+        const styles = { cancelled: 'bg-red-100 text-red-800', completed: 'bg-green-100 text-green-800' };
         return <span className={`px-2 py-1 text-xs font-semibold rounded-full ${styles[status] || 'bg-gray-100 text-gray-800'}`}>{status.toUpperCase()}</span>;
     };
 
     const parkingArea = booking.parkingSlot?.areaId;
     const location = parkingArea?.locationId;
 
-    if (!parkingArea || !location) return null;
+    if (!parkingArea || !location) {
+        return null;
+    }
 
     return (
         <div className="bg-white p-6 rounded-xl shadow-lg flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -137,18 +164,21 @@ const HistoryCard = ({ booking, onRepeatBooking }) => {
             </div>
             <div className="flex flex-col items-start sm:items-end w-full sm:w-auto mt-4 sm:mt-0">
                 {getStatusChip(booking.status)}
-                <button 
-                    onClick={() => onRepeatBooking(booking.parkingSlot._id)}
-                    className="mt-2 text-sm bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition flex items-center cursor-pointer"
-                >
-                    <RepeatIcon /> Repeat Booking
-                </button>
+                {booking.status === 'completed' && ( 
+                     <button 
+                        onClick={() => onRepeatBooking(booking.parkingSlot._id)}
+                        className="mt-2 text-sm bg-blue-500 text-white py-2 px-4 rounded-md hover:bg-blue-600 transition flex items-center cursor-pointer"
+                    >
+                        <RepeatIcon /> Repeat Booking
+                    </button>
+                )}
             </div>
         </div>
     );
 };
 
 
+// --- UPDATED: BookingHistoryPage ---
 const BookingHistoryPage = () => {
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -160,11 +190,12 @@ const BookingHistoryPage = () => {
     useEffect(() => {
         const fetchHistory = async () => {
             setLoading(true);
+            setError(''); 
             try {
-                const data = await apiService.getUserBookingHistory();
-                setBookings(Array.isArray(data) ? data : []);
+                const response = await apiService.getUserBookingHistory();
+                setBookings(Array.isArray(response.data) ? response.data : []);
             } catch (err) {
-                setError('A server error occurred.');
+                setError(err.response?.data?.message || 'Failed to load booking history.');
             } finally {
                 setLoading(false);
             }
@@ -177,11 +208,19 @@ const BookingHistoryPage = () => {
         setIsModalOpen(true);
     };
 
-    const showNotification = (message, type) => {
+    const showNotification = useCallback((message, type) => {
         setNotification({ isVisible: true, message, type });
-    };
+    }, []);
+    
+    if (loading) {
+        return (
+             <div className="container mx-auto">
+                <h1 className="text-4xl font-bold mb-6">Booking History</h1>
+                <BookingHistorySkeleton />
+            </div>
+        );
+    }
 
-    if (loading) return <div className="text-center py-10">Loading booking history...</div>;
     if (error) return <div className="text-red-500 text-center py-10">{error}</div>;
 
     return (

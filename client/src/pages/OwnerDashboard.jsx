@@ -23,7 +23,7 @@ const OwnerDashboard = () => {
                     style={() => isBaseDashboard ? activeLinkStyle : undefined}
                     className="px-4 py-2 font-semibold rounded-md transition-colors text-gray-600 hover:bg-blue-100"
                 >
-                    Dashboard
+                    My Stats
                 </NavLink>
                 <NavLink 
                     to="/owner-dashboard/parkings" 
