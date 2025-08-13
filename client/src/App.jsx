@@ -22,6 +22,7 @@ import OwnerStatsPage from './pages/owner/OwnerStatsPage';
 import MyParkingsPage from './pages/owner/MyParkingsPage';
 import AddParkingPage from './pages/owner/AddParkingPage';
 import EditParkingPage from './pages/owner/EditParkingPage';
+import PaymentSuccess from './components/PaymentSucess';
 
 
 function Layout() {
@@ -60,6 +61,7 @@ function App() {
           <Route path="parking/:id" element={<ParkingDetailsPage />} />
           <Route path="my-bookings" element={<MyBookingsPage />} />
           <Route path="booking-history" element={<BookingHistoryPage />} />
+          <Route path="/payment-success" element={<PaymentSuccess />} />
         </Route>
 
         <Route path="/owner-dashboard" element={<ProtectedRoute allowedRoles={['owner']} />}>

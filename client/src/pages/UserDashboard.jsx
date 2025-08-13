@@ -62,27 +62,20 @@ const MapEvents = ({ onMove }) => {
     return null;
 };
 
-const TrackUserLocation = ({ onLocationUpdate, showNotification }) => {
+const TrackUserLocation = ({ onLocationUpdate, showNotification, searchTerm }) => {
     const map = useMap();
     const [marker, setMarker] = useState(null);
-    const isFirstFind = useRef(true);
 
     useEffect(() => {
         map.locate({ watch: true, setView: false });
 
         const handleLocationFound = (e) => {
             const latlng = e.latlng;
-            if (marker) {
-                marker.setLatLng(latlng);
-            } else {
-                const newMarker = L.marker(latlng, { icon: userLocationIcon }).addTo(map);
-                setMarker(newMarker);
-            }
-            if (isFirstFind.current) {
-                map.flyTo(latlng, 15);
-                isFirstFind.current = false;
-            }
-            onLocationUpdate(latlng);
+            if (marker) marker.setLatLng(latlng);
+            else setMarker(L.marker(latlng, { icon: userLocationIcon }).addTo(map));
+
+            map.flyTo(latlng, 15);
+            onLocationUpdate(latlng, searchTerm);
         };
 
         const handleLocationError = () => {
@@ -99,7 +92,7 @@ const TrackUserLocation = ({ onLocationUpdate, showNotification }) => {
             map.off('locationerror', handleLocationError);
             if (marker) map.removeLayer(marker);
         };
-    }, [map, marker, onLocationUpdate, showNotification]);
+    }, [map, marker, onLocationUpdate, showNotification, searchTerm]);
 
     return null;
 };
@@ -142,7 +135,7 @@ const UserDashboard = () => {
             setLoading(false);
         }
     }, []);
-    
+
     const debouncedFetch = useMemo(() => debounce(fetchParkingAreas, 500), [fetchParkingAreas]);
 
     useEffect(() => {
@@ -162,10 +155,10 @@ const UserDashboard = () => {
         }
     }, [debouncedFetch, searchTerm, isTracking]);
 
-    const handleLocationUpdate = useCallback((latlng) => {
+    const handleLocationUpdate = useCallback((latlng, search) => {
         setMapCenter([latlng.lat, latlng.lng]);
-        debouncedFetch(latlng.lat, latlng.lng, searchTerm);
-    }, [debouncedFetch, searchTerm]);
+        fetchParkingAreas(latlng.lat, latlng.lng, search);
+    }, [fetchParkingAreas]);
 
     return (
         <div className="container mx-auto">
@@ -182,7 +175,6 @@ const UserDashboard = () => {
                         <CrosshairsIcon />
                         <span className="ml-2">{isTracking ? 'Stop Live Tracking' : 'Use My Current Location'}</span>
                     </button>
-                    
                     <div className="overflow-y-auto flex-grow">
                         {loading ? <ParkingListSkeleton /> : 
                             parkingAreas.length > 0 ? (
@@ -195,13 +187,12 @@ const UserDashboard = () => {
                         }
                     </div>
                 </div>
-
                 <div className="lg:col-span-2 h-full rounded-xl shadow-lg overflow-hidden">
                     <MapContainer ref={mapRef} center={mapCenter} zoom={zoom} scrollWheelZoom={true} style={{ height: '100%', width: '100%' }}>
                         <TileLayer attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors' url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
                         <GeoSearchField />
                         <MapEvents onMove={handleMapMove} />
-                        {isTracking && <TrackUserLocation onLocationUpdate={handleLocationUpdate} showNotification={showNotification} />}
+                        {isTracking && <TrackUserLocation onLocationUpdate={handleLocationUpdate} showNotification={showNotification} searchTerm={searchTerm} />}
                         {parkingAreas.map(area => (
                             <Marker key={area._id} position={[area.location.coordinates.lat, area.location.coordinates.lng]} icon={parkingIcon}>
                                 <Tooltip permanent direction="top" offset={[0, -35]}>{area.name}</Tooltip>

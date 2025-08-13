@@ -38,8 +38,7 @@ const updateBookingsAndSlots = async () => {
 };
 
 export const initScheduledJobs = () => {
-  cron.schedule('*/15 * * * *', () => {
-    console.log('[Cron Job] Running job to update completed bookings...');
+  cron.schedule('*/10 * * * *', () => {
     updateBookingsAndSlots();
   });
 };

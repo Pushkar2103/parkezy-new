@@ -91,6 +91,7 @@ const MyParkingsPage = () => {
                                     <img src={p.image || 'https://placehold.co/100x100/e2e8f0/4a5568?text=No+Img'} alt={p.name} className="w-16 h-16 rounded-md object-cover mr-4" />
                                     <div>
                                         <h3 className="font-bold text-lg text-gray-800">{p.name}</h3>
+                                        <h5 className='font-semibold text-gray-500 text-sm'>Price per hour: ₹{p.pricePerHour}</h5>
                                         <p className="text-sm text-gray-500 flex items-center"><MapPinIcon /> {p.locationId.name}, {p.locationId.city}</p>
                                     </div>
                                 </div>

@@ -16,7 +16,7 @@ const LoadingSpinner = () => (
     </svg>
 );
 
-const InputField = ({ name, label, value, onChange, type = 'text', placeholder, required = false, readOnly = false }) => (
+const InputField = ({ name, label, value, onChange, type = 'text', placeholder, required = false, readOnly = false, ...props }) => (
     <div>
         <label htmlFor={name} className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
         <input
@@ -29,6 +29,7 @@ const InputField = ({ name, label, value, onChange, type = 'text', placeholder, 
             required={required}
             readOnly={readOnly}
             className={`w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 transition ${readOnly ? 'bg-gray-100 cursor-not-allowed' : ''}`}
+            {...props}
         />
     </div>
 );
@@ -41,6 +42,7 @@ const AddParkingPage = () => {
         city: '',
         lat: '',
         lng: '',
+        pricePerHour: '',
         parkingImage: null
     });
     const [preview, setPreview] = useState(null);
@@ -99,7 +101,8 @@ const AddParkingPage = () => {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <form onSubmit={handleSubmit} className="space-y-4">
                     <InputField name="name" label="Parking Area Name" value={formData.name} placeholder="e.g., Downtown Central Parking" onChange={handleChange} required />
-                    <InputField name="totalSlots" label="Total Slots" type="number" value={formData.totalSlots} placeholder="e.g., 50" onChange={handleChange} required />
+                    <InputField name="totalSlots" label="Total Slots" type="number" value={formData.totalSlots} placeholder="e.g., 50" onChange={handleChange} required min="1" />
+                    <InputField name="pricePerHour" label="Price Per Hour in INR(₹)" type="number" value={formData.pricePerHour} placeholder="e.g., 50" onChange={handleChange} min="0" />
 
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Parking Image</label>

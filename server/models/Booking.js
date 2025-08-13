@@ -1,10 +1,6 @@
 import mongoose from 'mongoose';
 
 const bookingSchema = new mongoose.Schema({
-  userName: {
-    type: String,
-    required: true,
-  },
   carNumber: {
     type: String,
     required: true,
@@ -32,6 +28,27 @@ const bookingSchema = new mongoose.Schema({
     enum: ['booked', 'cancellation_requested', 'cancelled', 'completed', 'completion_requested'],
     default: 'booked',
   },
+  amountPaid: {
+    type: Number,
+    default: 0,
+  },
+  orderId: {
+    type: String,
+    required: function () {
+      return this.amountPaid > 0;
+    }
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'failed', null],
+    default: null
+  },
+  paymentMethod: {
+    type: String
+  },
+  paymentSessionId: {
+    type: String
+  }
 }, {
   timestamps: true
 });

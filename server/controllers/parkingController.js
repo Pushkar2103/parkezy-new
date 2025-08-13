@@ -2,8 +2,6 @@ import ParkingArea from '../models/ParkingArea.js';
 import ParkingLocation from '../models/ParkingLocation.js';
 import ParkingSlot from '../models/ParkingSlot.js';
 import Booking from '../models/Booking.js';
-import mongoose from 'mongoose';
-
 
 export const createParkingArea = async (req, res) => {
   const {
@@ -11,12 +9,13 @@ export const createParkingArea = async (req, res) => {
     totalSlots,
     locationName,
     city,
+    pricePerHour,
     lat,
     lng
   } = req.body;
   const ownerId = req.user._id;
 
-    const image = req.file ? req.file.path : '';
+  const image = req.file ? req.file.path : '';
 
   if (!name || !totalSlots || !locationName || !city || !lat || !lng) {
     return res.status(400).json({ message: 'Please provide all required fields, including coordinates from the map.' });
@@ -31,7 +30,7 @@ export const createParkingArea = async (req, res) => {
         city,
         coordinates: {
           type: 'Point',
-          coordinates: [parseFloat(lng), parseFloat(lat)] // [longitude, latitude]
+          coordinates: [parseFloat(lng), parseFloat(lat)]
         }
       });
     }
@@ -41,6 +40,7 @@ export const createParkingArea = async (req, res) => {
       locationId: location._id,
       name,
       totalSlots,
+      pricePerHour: parseFloat(pricePerHour) || 0,
       image
     });
 
@@ -49,6 +49,8 @@ export const createParkingArea = async (req, res) => {
       slots.push({
         areaId: newParkingArea._id,
         slotNumber: `S${i}`,
+        status: 'available', // added
+        isAvailable: true    // added
       });
     }
     await ParkingSlot.insertMany(slots);
@@ -75,6 +77,7 @@ export const updateParkingArea = async (req, res) => {
   const { id } = req.params;
   const { name } = req.body;
   const image = req.file ? req.file.path : '';
+  const pricePerHour = req.body.pricePerHour ? parseFloat(req.body.pricePerHour) : 0;
 
   try {
     const parkingArea = await ParkingArea.findById(id);
@@ -89,6 +92,7 @@ export const updateParkingArea = async (req, res) => {
 
     parkingArea.name = name || parkingArea.name;
     parkingArea.image = image || parkingArea.image;
+    parkingArea.pricePerHour = pricePerHour;
 
     const updatedParkingArea = await parkingArea.save();
     res.status(200).json(updatedParkingArea);
@@ -113,12 +117,19 @@ export const deleteParkingArea = async (req, res) => {
       return res.status(403).json({ message: 'User not authorized to delete this parking area.' });
     }
 
+    const locationId = parkingArea.locationId;
+
     const slotsToDelete = await ParkingSlot.find({ areaId: id });
     const slotIds = slotsToDelete.map(slot => slot._id);
 
     await Booking.deleteMany({ parkingSlot: { $in: slotIds } });
     await ParkingSlot.deleteMany({ areaId: id });
     await ParkingArea.findByIdAndDelete(id);
+
+    const otherAreasCount = await ParkingArea.countDocuments({ locationId });
+    if (otherAreasCount === 0) {
+      await ParkingLocation.findByIdAndDelete(locationId);
+    }
 
     res.status(200).json({ message: 'Parking area and all associated data deleted successfully.' });
 
@@ -132,7 +143,7 @@ export const getOwnerDashboardStats = async (req, res) => {
   const ownerId = req.user._id;
 
   try {
-    const ownerParkingAreas = await ParkingArea.find({ ownerId }).select('_id name');
+    const ownerParkingAreas = await ParkingArea.find({ ownerId }).select('_id name pricePerHour');
     
     if (ownerParkingAreas.length === 0) {
       return res.status(200).json({
@@ -142,6 +153,7 @@ export const getOwnerDashboardStats = async (req, res) => {
         currentOccupancy: 0,
         totalBookings: 0,
         cancellationRequests: 0,
+        earnings: 0,
         parkingAreas: []
       });
     }
@@ -157,12 +169,19 @@ export const getOwnerDashboardStats = async (req, res) => {
     const totalBookings = await Booking.countDocuments({ parkingSlot: { $in: slotIds } });
     const cancellationRequests = await Booking.countDocuments({ parkingSlot: { $in: slotIds }, status: 'cancellation_requested' });
 
+    let totalEarnings = await Booking.aggregate([
+      { $match: { parkingSlot: { $in: slotIds }, paymentStatus: 'paid' } },
+      { $group: { _id: null, total: { $sum: '$amountPaid' } } }
+    ]);
+    totalEarnings = totalEarnings.length ? totalEarnings[0].total : 0;
+
     res.status(200).json({
       totalAreas: ownerParkingAreas.length,
       parkingAreas: ownerParkingAreas,
       totalSlots,
       occupiedSlots,
       currentOccupancy: totalSlots > 0 ? (occupiedSlots / totalSlots) * 100 : 0,
+      earnings: totalEarnings,
       totalBookings,
       cancellationRequests,
     });

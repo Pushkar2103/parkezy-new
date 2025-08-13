@@ -1,11 +1,14 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { apiService } from '../api/apiService';
+import PaymentModal from '../components/PaymentModal';
 
 const MapPinIcon = () => <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>;
 const BackArrowIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>;
 const CloseIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>; 
 const CheckCircleIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-500 mr-3" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>;
+const LockClosedIcon = () => <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>;
+
 
 const Spinner = () => <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>;
 
@@ -36,92 +39,146 @@ const ParkingDetailsSkeleton = () => (
 );
 
 const ParkingSlot = ({ slot, onSelect }) => {
-    const isAvailable = slot.isAvailable;
+    const status = slot.status;
     const baseClasses = "flex flex-col items-center justify-center w-20 h-20 m-2 rounded-lg border-2 transition-transform duration-200 transform";
     const availableClasses = "bg-green-100 border-green-400 text-green-800 hover:bg-green-200 hover:scale-105 cursor-pointer";
     const unavailableClasses = "bg-red-100 border-red-400 text-red-800 cursor-not-allowed opacity-60";
 
     return (
         <div
-            onClick={() => isAvailable && onSelect(slot)}
-            className={`${baseClasses} ${isAvailable ? availableClasses : unavailableClasses}`}
+            onClick={() => status==='available' && onSelect(slot)}
+            className={`${baseClasses} ${status === 'available' ? availableClasses : unavailableClasses}`}
         >
             <span className="font-bold text-lg">{slot.slotNumber}</span>
-            <span className="text-xs">{isAvailable ? 'Available' : 'Booked'}</span>
+            <span className="text-xs">{status}</span>
         </div>
     );
 };
 
-const BookingModal = ({ isOpen, onClose, slot, area, onBookingSuccess }) => {
+const BookingModal = ({ isOpen, onClose, slot, area, onBookingSuccess, onProceedToPayment }) => {
+    const [step, setStep] = useState(1);
     const [bookingDetails, setBookingDetails] = useState({ carNumber: '', startTime: '', endTime: '' });
+    const [totalPrice, setTotalPrice] = useState(0);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState('');
 
-    useEffect(() => {
-        if (slot) {
-            setBookingDetails({ carNumber: '', startTime: '', endTime: '' });
-            setError('');
-        }
-    }, [slot]);
+    const resetState = () => {
+        setStep(1);
+        setBookingDetails({ carNumber: '', startTime: '', endTime: '' });
+        setTotalPrice(0);
+        setError('');
+        setLoading(false);
+    };
 
-    if (!isOpen || !slot || !area) return null;
+    useEffect(() => {
+        if (isOpen) {
+            resetState();
+        }
+    }, [isOpen]);
 
     const handleInputChange = (e) => {
         setBookingDetails({ ...bookingDetails, [e.target.name]: e.target.value });
     };
 
-    const handleBookingConfirm = async (e) => {
-        e.preventDefault();
-        setLoading(true);
+    const handleProceed = () => {
         setError('');
-        try {
-            const response = await apiService.bookSlot({
-                slotId: slot._id,
-                ...bookingDetails
-            });
-            onBookingSuccess(response.data.booking);
-        } catch (err) {
-            setError(err.response?.data?.message || 'An unknown error occurred.');
-        } finally {
-            setLoading(false);
+        if (!bookingDetails.carNumber || !bookingDetails.startTime || !bookingDetails.endTime) {
+            setError('Please fill in all fields.');
+            return;
+        }
+        const start = new Date(bookingDetails.startTime);
+        const end = new Date(bookingDetails.endTime);
+        if (end <= start) {
+            setError('End time must be after the start time.');
+            return;
+        }
+
+        const diffMs = end.getTime() - start.getTime();
+        const hours = Math.ceil(diffMs / (1000 * 60 * 60));
+        const finalPrice = hours * area.pricePerHour;
+        setTotalPrice(finalPrice);
+        setStep(2);
+    };
+
+    const handleConfirmation = async () => {
+        if (totalPrice > 0) {
+            onProceedToPayment({ ...bookingDetails, slotId: slot._id }, totalPrice);
+        } else {
+            setLoading(true);
+            setError('');
+            try {
+                const response = await apiService.bookSlot({
+                    slotId: slot._id,
+                    ...bookingDetails,
+                    totalAmount: 0
+                });
+                onBookingSuccess(response.data.booking);
+            } catch (err) {
+                setError(err.response?.data?.message || 'An unknown error occurred.');
+            } finally {
+                setLoading(false);
+            }
         }
     };
+
+    const getDatetimeLimits = () => {
+        const now = new Date();
+        const oneMonthLater = new Date(now);
+        oneMonthLater.setMonth(now.getMonth() + 1);
+        const formatForInput = (date) => date.toISOString().slice(0, 16);
+        return { min: formatForInput(now), max: formatForInput(oneMonthLater) };
+    };
+    
+    const { min, max } = getDatetimeLimits();
+
+    if (!isOpen || !slot || !area) return null;
 
     return (
         <div className="fixed inset-0 bg-black bg-opacity-60 flex justify-center items-center z-50 p-4">
             <div className="bg-white p-8 rounded-xl shadow-2xl max-w-lg w-full relative">
-                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800">
-                    <CloseIcon />
-                </button>
-                <h2 className="text-3xl font-bold mb-2">Confirm Your Booking</h2>
-                <p className="text-gray-600 mb-6">You are booking slot <span className="font-bold text-blue-600">{slot.slotNumber}</span> at <span className="font-bold">{area.name}</span>.</p>
-                
-                {error && <div className="bg-red-100 text-red-700 p-3 rounded-md mb-4">{error}</div>}
-
-                <form onSubmit={handleBookingConfirm} className="space-y-4">
-                    <div>
-                        <label htmlFor="carNumber" className="block text-sm font-medium text-gray-700 mb-1">Car Number</label>
-                        <input type="text" name="carNumber" id="carNumber" value={bookingDetails.carNumber} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500" placeholder="e.g., UP32-AB-1234" />
-                    </div>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <button onClick={onClose} className="absolute top-4 right-4 text-gray-500 hover:text-gray-800"><CloseIcon /></button>
+                <h2 className="text-3xl font-bold mb-2">{step === 1 ? 'Enter Booking Details' : 'Confirm Your Booking'}</h2>
+                <p className="text-gray-600 mb-6">Booking slot <span className="font-bold text-blue-600">{slot.slotNumber}</span> at <span className="font-bold">{area.name}</span>.</p>
+                {error && <div className="bg-red-100 text-red-700 p-3 rounded-md mb-4 text-center">{error}</div>}
+                {step === 1 && (
+                    <div className="space-y-4">
                         <div>
-                            <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
-                            <input type="datetime-local" name="startTime" id="startTime" value={bookingDetails.startTime} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500" />
+                            <label htmlFor="carNumber" className="block text-sm font-medium text-gray-700 mb-1">Car Number</label>
+                            <input type="text" name="carNumber" id="carNumber" value={bookingDetails.carNumber} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" placeholder="e.g., UP32-AB-1234" />
                         </div>
-                        <div>
-                            <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
-                            <input type="datetime-local" name="endTime" id="endTime" value={bookingDetails.endTime} onChange={handleInputChange} required className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500" />
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label htmlFor="startTime" className="block text-sm font-medium text-gray-700 mb-1">Start Time</label>
+                                <input type="datetime-local" name="startTime" id="startTime" value={bookingDetails.startTime} onChange={handleInputChange} min={min} max={max} required className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
+                            </div>
+                            <div>
+                                <label htmlFor="endTime" className="block text-sm font-medium text-gray-700 mb-1">End Time</label>
+                                <input type="datetime-local" name="endTime" id="endTime" value={bookingDetails.endTime} onChange={handleInputChange} min={min} max={max} required className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm" />
+                            </div>
+                        </div>
+                        <button onClick={handleProceed} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg">Proceed</button>
+                    </div>
+                )}
+                {step === 2 && (
+                    <div className="space-y-4">
+                        <div className="bg-blue-50 border border-blue-200 p-4 rounded-lg text-center">
+                            <p className="text-sm font-medium text-blue-800">Total Amount</p>
+                            <p className="text-4xl font-bold text-blue-900">₹{totalPrice.toLocaleString('en-IN')}</p>
+                        </div>
+                        <div className="flex items-center space-x-4">
+                            <button onClick={() => setStep(1)} className="w-full bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-3 px-4 rounded-lg">Back</button>
+                            <button onClick={handleConfirmation} disabled={loading} className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 px-4 rounded-lg disabled:bg-green-400 flex items-center justify-center">
+                                {loading ? <Spinner /> : (totalPrice > 0 ? <><LockClosedIcon /> Pay & Book</> : 'Book Slot')}
+                            </button>
                         </div>
                     </div>
-                    <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300 disabled:bg-blue-400 flex items-center justify-center">
-                        {loading && <Spinner />}
-                        {loading ? 'Confirming...' : 'Confirm & Book Slot'}
-                    </button>
-                </form>
+                )}
             </div>
         </div>
     );
 };
+
+
 
 const SuccessNotification = ({ message, onDismiss }) => {
     useEffect(() => {
@@ -136,9 +193,7 @@ const SuccessNotification = ({ message, onDismiss }) => {
                 <p className="font-bold">Success!</p>
                 <p className="text-sm text-gray-600">{message}</p>
             </div>
-            <button onClick={onDismiss} className="ml-4 text-gray-400 hover:text-gray-600">
-                <CloseIcon />
-            </button>
+            <button onClick={onDismiss} className="ml-4 text-gray-400 hover:text-gray-600"><CloseIcon /></button>
         </div>
     );
 };
@@ -151,7 +206,9 @@ const ParkingDetailsPage = () => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [selectedSlot, setSelectedSlot] = useState(null);
-    const [isModalOpen, setIsModalOpen] = useState(false);
+    const [isBookingModalOpen, setIsBookingModalOpen] = useState(false);
+    const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+    const [paymentDetails, setPaymentDetails] = useState(null);
     const [bookingSuccessMessage, setBookingSuccessMessage] = useState('');
 
     const fetchDetails = useCallback(async () => {
@@ -174,11 +231,18 @@ const ParkingDetailsPage = () => {
 
     const handleSlotSelection = (slot) => {
         setSelectedSlot(slot);
-        setIsModalOpen(true);
+        setIsBookingModalOpen(true);
+    };
+
+    const handleProceedToPayment = (details, price) => {
+        setPaymentDetails({ details, price });
+        setIsBookingModalOpen(false);
+        setIsPaymentModalOpen(true);
     };
 
     const handleBookingSuccess = (booking) => {
-        setIsModalOpen(false);
+        setIsBookingModalOpen(false);
+        setIsPaymentModalOpen(false);
         setSelectedSlot(null);
         setBookingSuccessMessage(`Your booking for slot ${booking.parkingSlot?.slotNumber} is confirmed!`);
         fetchDetails();
@@ -194,10 +258,19 @@ const ParkingDetailsPage = () => {
             )}
 
             <BookingModal 
-                isOpen={isModalOpen}
-                onClose={() => setIsModalOpen(false)}
+                isOpen={isBookingModalOpen}
+                onClose={() => setIsBookingModalOpen(false)}
                 slot={selectedSlot}
                 area={area}
+                onBookingSuccess={handleBookingSuccess}
+                onProceedToPayment={handleProceedToPayment}
+            />
+
+            <PaymentModal
+                isOpen={isPaymentModalOpen}
+                onClose={() => setIsPaymentModalOpen(false)}
+                bookingDetails={paymentDetails?.details}
+                totalPrice={paymentDetails?.price}
                 onBookingSuccess={handleBookingSuccess}
             />
 
@@ -222,6 +295,7 @@ const ParkingDetailsPage = () => {
                                 <MapPinIcon />
                                 <span className="ml-2">{area.locationId.name}, {area.locationId.city}</span>
                             </div>
+                            <p className="mt-4 text-gray-600">Price per hour: ₹{area.pricePerHour}</p>
                             <p className="mt-4 text-gray-600">Select an available slot to proceed with your booking.</p>
                         </div>
                     </div>
