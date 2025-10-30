@@ -62,6 +62,7 @@ function App() {
           <Route path="parking/:id" element={<ParkingDetailsPage />} />
           <Route path="my-bookings" element={<MyBookingsPage />} />
           <Route path="booking-history" element={<BookingHistoryPage />} />
+          <Route path="favorites" element={<Favorites />} />
           <Route path="/payment-success" element={<PaymentSuccess />} />
         </Route>
 
