@@ -49,11 +49,27 @@ export const AuthProvider = ({ children }) => {
         }
     }, [user]);
 
+    const refreshFavorites = useCallback(async () => {
+        if (!user || user.role !== 'user') {
+            setFavorites([]);
+            return;
+        }
+        try {
+            const response = await apiService.getFavorites();
+            setFavorites(response.data.map(f => f._id));
+        } catch (error) {
+            console.error('Failed to fetch favorites:', error);
+            setFavorites([]);
+        }
+    }, [user]);
+
     useEffect(() => {
         if (user && user.role === 'owner') {
             fetchRequestCount();
+        } else if (user && user.role === 'user') {
+            refreshFavorites();
         }
-    }, [user, fetchRequestCount]);
+    }, [user, fetchRequestCount, refreshFavorites]);
 
     const login = (authData) => {
         const { user: userData, token: userToken } = authData;
