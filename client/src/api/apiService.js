@@ -87,6 +87,13 @@ apiService.getUserBookingHistory = () =>
 apiService.getSlotAvailability = (slotId) =>
   apiService.get(`/user/slots/${slotId}/availability`);
 
+apiService.addToFavorites = (parkingAreaId) =>
+  apiService.post(`/user/favorites/${parkingAreaId}`);
+apiService.removeFromFavorites = (parkingAreaId) =>
+  apiService.delete(`/user/favorites/${parkingAreaId}`);
+apiService.getFavorites = () =>
+  apiService.get('/user/favorites');
+
 apiService.getMyProfile = () => apiService.get("/profile/me");
 apiService.updateMyProfile = (profileData) =>
   apiService.put("/profile/update-me", profileData);
