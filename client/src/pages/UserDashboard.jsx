@@ -151,6 +151,12 @@ const UserDashboard = () => {
         fetchParkingAreas(mapCenter[0], mapCenter[1], searchTerm);
     }, []);
 
+    useEffect(() => {
+        if (!isInitialLoad.current) {
+            fetchParkingAreas(mapCenter[0], mapCenter[1], searchTerm);
+        }
+    }, [filters]);
+
     const handleSearch = (e) => {
         e.preventDefault();
         isInitialLoad.current = true;
