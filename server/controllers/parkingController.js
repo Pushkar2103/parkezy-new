@@ -105,9 +105,23 @@ export const getOwnerParkingAreas = async (req, res) => {
 
 export const updateParkingArea = async (req, res) => {
   const { id } = req.params;
-  const { name } = req.body;
+  const { name, parkingType, evCharging, securityFeatures, vehicleTypes } = req.body;
   const image = req.file ? req.file.path : '';
   const pricePerHour = req.body.pricePerHour ? parseFloat(req.body.pricePerHour) : 0;
+
+  // Validate parkingType if provided
+  if (parkingType && !['covered', 'open-air', 'mixed'].includes(parkingType)) {
+    return res.status(400).json({ message: 'Invalid parking type. Must be: covered, open-air, or mixed.' });
+  }
+
+  // Validate vehicleTypes if provided
+  if (vehicleTypes && Array.isArray(vehicleTypes)) {
+    const validTypes = ['bike', 'car', 'compact-suv', 'full-suv', 'truck'];
+    const invalid = vehicleTypes.filter(type => !validTypes.includes(type));
+    if (invalid.length > 0) {
+      return res.status(400).json({ message: `Invalid vehicle types: ${invalid.join(', ')}` });
+    }
+  }
 
   try {
     const parkingArea = await ParkingArea.findById(id);
@@ -123,6 +137,16 @@ export const updateParkingArea = async (req, res) => {
     parkingArea.name = name || parkingArea.name;
     parkingArea.image = image || parkingArea.image;
     parkingArea.pricePerHour = pricePerHour;
+
+    // Update new fields if provided
+    if (parkingType) parkingArea.parkingType = parkingType;
+    if (typeof evCharging === 'boolean') parkingArea.evCharging = evCharging;
+    if (securityFeatures && typeof securityFeatures === 'object') {
+      parkingArea.securityFeatures = securityFeatures;
+    }
+    if (vehicleTypes && Array.isArray(vehicleTypes)) {
+      parkingArea.vehicleTypes = vehicleTypes;
+    }
 
     const updatedParkingArea = await parkingArea.save();
     res.status(200).json(updatedParkingArea);
