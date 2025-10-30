@@ -8,6 +8,7 @@ export const AuthProvider = ({ children }) => {
     const [token, setToken] = useState(() => localStorage.getItem('parkezy_token'));
     const [loading, setLoading] = useState(true);
     const [requestCount, setRequestCount] = useState(0);
+    const [favorites, setFavorites] = useState([]);
 
     useEffect(() => {
         const initializeAuth = async () => {
