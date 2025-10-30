@@ -43,7 +43,16 @@ const AddParkingPage = () => {
         lat: '',
         lng: '',
         pricePerHour: '',
-        parkingImage: null
+        parkingImage: null,
+        parkingType: 'open-air',
+        evCharging: false,
+        securityFeatures: {
+            cctv: false,
+            securityGuard: false,
+            gatedAccess: false,
+            lighting: false
+        },
+        vehicleTypes: []
     });
     const [preview, setPreview] = useState(null);
     const [loading, setLoading] = useState(false);
