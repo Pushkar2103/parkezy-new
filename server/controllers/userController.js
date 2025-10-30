@@ -79,6 +79,11 @@ export const getAllParkingAreas = async (req, res) => {
         image: area.image,
         totalSlots: area.totalSlots,
         availableSlots,
+        pricePerHour: area.pricePerHour,
+        parkingType: area.parkingType,
+        evCharging: area.evCharging,
+        securityFeatures: area.securityFeatures,
+        vehicleTypes: area.vehicleTypes,
         location: area.locationId
       };
     }));
