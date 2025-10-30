@@ -129,6 +129,87 @@ const AddParkingPage = () => {
                     <InputField name="totalSlots" label="Total Slots" type="number" value={formData.totalSlots} placeholder="e.g., 50" onChange={handleChange} required min="1" />
                     <InputField name="pricePerHour" label="Price Per Hour in INR(₹)" type="number" value={formData.pricePerHour} placeholder="e.g., 50" onChange={handleChange} min="0" />
 
+                    {/* Parking Type */}
+                    <div>
+                        <label htmlFor="parkingType" className="block text-sm font-medium text-gray-700 mb-1">Parking Type</label>
+                        <select
+                            name="parkingType"
+                            id="parkingType"
+                            value={formData.parkingType}
+                            onChange={handleChange}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                        >
+                            <option value="open-air">Open Air</option>
+                            <option value="covered">Covered</option>
+                            <option value="mixed">Mixed</option>
+                        </select>
+                    </div>
+
+                    {/* EV Charging */}
+                    <div className="flex items-center">
+                        <input
+                            type="checkbox"
+                            name="evCharging"
+                            id="evCharging"
+                            checked={formData.evCharging}
+                            onChange={handleChange}
+                            className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                        />
+                        <label htmlFor="evCharging" className="ml-2 text-sm font-medium text-gray-700">EV Charging Available</label>
+                    </div>
+
+                    {/* Security Features */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Security Features</label>
+                        <div className="space-y-2">
+                            {[
+                                { value: 'cctv', label: 'CCTV' },
+                                { value: 'securityGuard', label: 'Security Guard' },
+                                { value: 'gatedAccess', label: 'Gated Access' },
+                                { value: 'lighting', label: 'Lighting' }
+                            ].map(feature => (
+                                <div key={feature.value} className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        name={`security_${feature.value}`}
+                                        id={`security_${feature.value}`}
+                                        checked={formData.securityFeatures[feature.value]}
+                                        onChange={handleChange}
+                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                    />
+                                    <label htmlFor={`security_${feature.value}`} className="ml-2 text-sm text-gray-700">{feature.label}</label>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* Vehicle Types */}
+                    <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-2">Accepted Vehicle Types</label>
+                        <div className="space-y-2">
+                            {[
+                                { value: 'bike', label: 'Bike' },
+                                { value: 'car', label: 'Car' },
+                                { value: 'compact-suv', label: 'Compact SUV' },
+                                { value: 'full-suv', label: 'Full-Size SUV' },
+                                { value: 'truck', label: 'Truck' }
+                            ].map(vehicle => (
+                                <div key={vehicle.value} className="flex items-center">
+                                    <input
+                                        type="checkbox"
+                                        name="vehicleType"
+                                        value={vehicle.value}
+                                        id={`vehicle_${vehicle.value}`}
+                                        checked={formData.vehicleTypes.includes(vehicle.value)}
+                                        onChange={handleChange}
+                                        className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                    />
+                                    <label htmlFor={`vehicle_${vehicle.value}`} className="ml-2 text-sm text-gray-700">{vehicle.label}</label>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
                     <div>
                         <label className="block text-sm font-medium text-gray-700 mb-1">Parking Image</label>
                         <div className="mt-1 flex items-center">
