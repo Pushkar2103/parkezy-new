@@ -365,6 +365,11 @@ const ParkingListCard = ({ area }) => (
                 <span className={`font-bold px-2 py-1 rounded-full text-xs ${area.availableSlots > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{area.availableSlots} available</span>
                 <span className="text-gray-600 font-semibold">{area.distance ? `${area.distance.toFixed(1)} km away` : ''}</span>
             </div>
+            <div className="mt-2">
+                <span className="text-blue-600 font-bold text-sm">₹{area.pricePerHour}/hr</span>
+                {area.evCharging && <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">⚡ EV</span>}
+                {area.parkingType === 'covered' && <span className="ml-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">🏠 Covered</span>}
+            </div>
         </div>
         <ChevronRightIcon />
     </Link>
