@@ -107,6 +107,7 @@ const debounce = (func, delay) => {
 };
 
 const UserDashboard = () => {
+    const { favorites, refreshFavorites } = useAuth();
     const [parkingAreas, setParkingAreas] = useState([]);
     const [loading, setLoading] = useState(true);
     const [notification, setNotification] = useState({ message: '', type: '', isVisible: false });
@@ -128,6 +129,21 @@ const UserDashboard = () => {
 
     const showNotification = (message, type) => {
         setNotification({ message, type, isVisible: true });
+    };
+
+    const handleToggleFavorite = async (parkingAreaId, isFavorite) => {
+        try {
+            if (isFavorite) {
+                await apiService.removeFromFavorites(parkingAreaId);
+                showNotification('Removed from favorites', 'success');
+            } else {
+                await apiService.addToFavorites(parkingAreaId);
+                showNotification('Added to favorites', 'success');
+            }
+            await refreshFavorites();
+        } catch (error) {
+            showNotification(error.response?.data?.message || 'Failed to update favorites', 'error');
+        }
     };
 
     const fetchParkingAreas = useCallback(async (lat, lng, search) => {
