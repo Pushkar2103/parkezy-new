@@ -10,12 +10,13 @@ import LandingPage from './components/LandingPage';
 import AuthPage from './pages/AuthPage';
 import UserDashboard from './pages/UserDashboard';
 import ForgotPasswordPage from './pages/ForgotPasswordPage';
-import ResetPasswordPage from './pages/ResetPasswordPage'; 
-import ParkingDetailsPage from './pages/ParkingDetailsPage'; 
+import ResetPasswordPage from './pages/ResetPasswordPage';
+import ParkingDetailsPage from './pages/ParkingDetailsPage';
 import OwnerDashboard from './pages/OwnerDashboard';
 import MyBookingsPage from './pages/MyBookingsPage';
-import ProfilePage from './pages/ProfilePage'; 
+import ProfilePage from './pages/ProfilePage';
 import BookingHistoryPage from './pages/BookingHistoryPage';
+import Favorites from './pages/Favorites';
 
 import RequestsPage from './pages/owner/RequestsPage';
 import OwnerStatsPage from './pages/owner/OwnerStatsPage';
