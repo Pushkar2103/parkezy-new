@@ -5,7 +5,10 @@ import {
   bookSlot,
   getUserBookings,
   getUserBookingHistory,
-  getSlotAvailability
+  getSlotAvailability,
+  addToFavorites,
+  removeFromFavorites,
+  getFavorites
 } from '../controllers/userController.js';
 import { auth, userAuth } from '../middlewares/authMiddleware.js';
 
@@ -20,5 +23,10 @@ router.post('/book-slot', auth, userAuth, bookSlot);
 router.get('/bookings', auth, userAuth, getUserBookings);
 router.get('/bookings/history', auth, userAuth, getUserBookingHistory);
 router.get('/slots/:slotId/availability', auth, userAuth, getSlotAvailability);
+
+// Favorites routes
+router.post('/favorites/:parkingAreaId', auth, userAuth, addToFavorites);
+router.delete('/favorites/:parkingAreaId', auth, userAuth, removeFromFavorites);
+router.get('/favorites', auth, userAuth, getFavorites);
 
 export default router;
