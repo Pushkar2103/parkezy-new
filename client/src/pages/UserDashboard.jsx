@@ -112,6 +112,15 @@ const UserDashboard = () => {
     const [mapCenter, setMapCenter] = useState([26.8467, 80.9462]);
     const [zoom, setZoom] = useState(13);
     const [searchTerm, setSearchTerm] = useState('');
+    const [filters, setFilters] = useState({
+        minPrice: '',
+        maxPrice: '',
+        parkingType: '',
+        evCharging: false,
+        securityFeatures: [],
+        vehicleType: ''
+    });
+    const [showFilters, setShowFilters] = useState(false);
     const [isTracking, setIsTracking] = useState(false);
     const isInitialLoad = useRef(true);
     const mapRef = useRef();
