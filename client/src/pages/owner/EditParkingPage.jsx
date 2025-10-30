@@ -8,7 +8,20 @@ const PencilIcon = () => <svg xmlns="http://www.w3.org/2000/svg" fill="none" vie
 const EditParkingPage = () => {
     const { id } = useParams();
     const navigate = useNavigate();
-    const [formData, setFormData] = useState({ name: '', pricePerHour: '', parkingImage: null });
+    const [formData, setFormData] = useState({
+        name: '',
+        pricePerHour: '',
+        parkingImage: null,
+        parkingType: 'open-air',
+        evCharging: false,
+        securityFeatures: {
+            cctv: false,
+            securityGuard: false,
+            gatedAccess: false,
+            lighting: false
+        },
+        vehicleTypes: []
+    });
     const [currentImage, setCurrentImage] = useState('');
     const [preview, setPreview] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -22,7 +35,20 @@ const EditParkingPage = () => {
                 const response = await apiService.getOwnerParkingAreas();
                 const parkingToEdit = response.data.find(p => p._id === id);
                 if (parkingToEdit) {
-                    setFormData({ name: parkingToEdit.name, pricePerHour: parkingToEdit.pricePerHour, parkingImage: null });
+                    setFormData({
+                        name: parkingToEdit.name,
+                        pricePerHour: parkingToEdit.pricePerHour,
+                        parkingImage: null,
+                        parkingType: parkingToEdit.parkingType || 'open-air',
+                        evCharging: parkingToEdit.evCharging || false,
+                        securityFeatures: parkingToEdit.securityFeatures || {
+                            cctv: false,
+                            securityGuard: false,
+                            gatedAccess: false,
+                            lighting: false
+                        },
+                        vehicleTypes: parkingToEdit.vehicleTypes || []
+                    });
                     setCurrentImage(parkingToEdit.image || '');
                 } else {
                     setError('Parking area not found.');
