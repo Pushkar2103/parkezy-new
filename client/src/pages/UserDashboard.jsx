@@ -190,6 +190,136 @@ const UserDashboard = () => {
                         <CrosshairsIcon />
                         <span className="ml-2">{isTracking ? 'Stop Live Tracking' : 'Use My Current Location'}</span>
                     </button>
+
+                    {/* Filter Toggle Button */}
+                    <button
+                        onClick={() => setShowFilters(!showFilters)}
+                        className="w-full flex items-center justify-center font-semibold py-2 px-4 rounded-lg mb-4 bg-white border-2 border-gray-300 hover:border-blue-500 text-gray-700 transition"
+                    >
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                        </svg>
+                        Filters
+                        {(filters.minPrice || filters.maxPrice || filters.parkingType || filters.evCharging || filters.securityFeatures.length > 0 || filters.vehicleType) &&
+                            <span className="ml-2 bg-blue-600 text-white text-xs px-2 py-1 rounded-full">Active</span>
+                        }
+                    </button>
+
+                    {/* Filter Panel */}
+                    {showFilters && (
+                        <div className="bg-gray-50 p-4 rounded-lg mb-4 space-y-4 border border-gray-200">
+                            {/* Price Range */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Price Range (₹/hour)</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <input
+                                        type="number"
+                                        placeholder="Min"
+                                        value={filters.minPrice}
+                                        onChange={(e) => setFilters({...filters, minPrice: e.target.value})}
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                    <input
+                                        type="number"
+                                        placeholder="Max"
+                                        value={filters.maxPrice}
+                                        onChange={(e) => setFilters({...filters, maxPrice: e.target.value})}
+                                        className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Parking Type */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Parking Type</label>
+                                <select
+                                    value={filters.parkingType}
+                                    onChange={(e) => setFilters({...filters, parkingType: e.target.value})}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="">All Types</option>
+                                    <option value="covered">Covered</option>
+                                    <option value="open-air">Open Air</option>
+                                    <option value="mixed">Mixed</option>
+                                </select>
+                            </div>
+
+                            {/* EV Charging */}
+                            <div className="flex items-center">
+                                <input
+                                    type="checkbox"
+                                    id="evCharging"
+                                    checked={filters.evCharging}
+                                    onChange={(e) => setFilters({...filters, evCharging: e.target.checked})}
+                                    className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                />
+                                <label htmlFor="evCharging" className="ml-2 text-sm font-medium text-gray-700">EV Charging Available</label>
+                            </div>
+
+                            {/* Security Features */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Security Features</label>
+                                <div className="space-y-2">
+                                    {[
+                                        { value: 'cctv', label: 'CCTV' },
+                                        { value: 'securityGuard', label: 'Security Guard' },
+                                        { value: 'gatedAccess', label: 'Gated Access' },
+                                        { value: 'lighting', label: 'Lighting' }
+                                    ].map(feature => (
+                                        <div key={feature.value} className="flex items-center">
+                                            <input
+                                                type="checkbox"
+                                                id={feature.value}
+                                                checked={filters.securityFeatures.includes(feature.value)}
+                                                onChange={(e) => {
+                                                    if (e.target.checked) {
+                                                        setFilters({...filters, securityFeatures: [...filters.securityFeatures, feature.value]});
+                                                    } else {
+                                                        setFilters({...filters, securityFeatures: filters.securityFeatures.filter(f => f !== feature.value)});
+                                                    }
+                                                }}
+                                                className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                                            />
+                                            <label htmlFor={feature.value} className="ml-2 text-sm text-gray-700">{feature.label}</label>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Vehicle Type */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Vehicle Type</label>
+                                <select
+                                    value={filters.vehicleType}
+                                    onChange={(e) => setFilters({...filters, vehicleType: e.target.value})}
+                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="">All Vehicles</option>
+                                    <option value="bike">Bike</option>
+                                    <option value="car">Car</option>
+                                    <option value="compact-suv">Compact SUV</option>
+                                    <option value="full-suv">Full-Size SUV</option>
+                                    <option value="truck">Truck</option>
+                                </select>
+                            </div>
+
+                            {/* Clear Filters */}
+                            <button
+                                onClick={() => setFilters({
+                                    minPrice: '',
+                                    maxPrice: '',
+                                    parkingType: '',
+                                    evCharging: false,
+                                    securityFeatures: [],
+                                    vehicleType: ''
+                                })}
+                                className="w-full py-2 px-4 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-lg transition"
+                            >
+                                Clear All Filters
+                            </button>
+                        </div>
+                    )}
+
                     <div className="overflow-y-auto flex-grow">
                         {loading ? <ParkingListSkeleton /> : 
                             parkingAreas.length > 0 ? (
