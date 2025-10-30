@@ -21,9 +21,50 @@ export const getAllParkingAreas = async (req, res) => {
   const lat = req.query.lat ? parseFloat(req.query.lat) : null;
   const lng = req.query.lng ? parseFloat(req.query.lng) : null;
   const radius = req.query.radius ? parseFloat(req.query.radius) : 10;
+  const minPrice = req.query.minPrice ? parseFloat(req.query.minPrice) : null;
+  const maxPrice = req.query.maxPrice ? parseFloat(req.query.maxPrice) : null;
+  const parkingType = req.query.parkingType; // 'covered', 'open-air', 'mixed'
+  const evCharging = req.query.evCharging === 'true'; // boolean
+  const securityFeatures = req.query.securityFeatures; // comma-separated: "cctv,lighting"
+  const vehicleType = req.query.vehicleType; // single value: 'car', 'bike', etc.
 
   try {
-    const allParkingAreas = await ParkingArea.find({}).populate('locationId');
+    // Build filter object
+    const filter = {};
+
+    // Price range filter
+    if (minPrice !== null || maxPrice !== null) {
+      filter.pricePerHour = {};
+      if (minPrice !== null) filter.pricePerHour.$gte = minPrice;
+      if (maxPrice !== null) filter.pricePerHour.$lte = maxPrice;
+    }
+
+    // Parking type filter
+    if (parkingType && ['covered', 'open-air', 'mixed'].includes(parkingType)) {
+      filter.parkingType = parkingType;
+    }
+
+    // EV charging filter
+    if (req.query.evCharging) {
+      filter.evCharging = evCharging;
+    }
+
+    // Security features filter (all selected must be present)
+    if (securityFeatures) {
+      const features = securityFeatures.split(',');
+      features.forEach(feature => {
+        if (['cctv', 'securityGuard', 'gatedAccess', 'lighting'].includes(feature)) {
+          filter[`securityFeatures.${feature}`] = true;
+        }
+      });
+    }
+
+    // Vehicle type filter
+    if (vehicleType && ['bike', 'car', 'compact-suv', 'full-suv', 'truck'].includes(vehicleType)) {
+      filter.vehicleTypes = vehicleType;
+    }
+
+    const allParkingAreas = await ParkingArea.find(filter).populate('locationId');
     if (!allParkingAreas.length) return res.status(200).json([]);
 
     const augmentedAreas = await Promise.all(allParkingAreas.map(async (area) => {
