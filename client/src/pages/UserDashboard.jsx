@@ -136,14 +136,14 @@ const UserDashboard = () => {
         }
         setNotification(prev => ({ ...prev, isVisible: false }));
         try {
-            const response = await apiService.getParkingAreas(search, lat, lng);
+            const response = await apiService.getParkingAreas(search, lat, lng, filters);
             setParkingAreas(Array.isArray(response.data) ? response.data : []);
         } catch (err) {
             showNotification(err.response?.data?.message || 'Could not connect to the server.', 'error');
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [filters]);
 
     const debouncedFetch = useMemo(() => debounce(fetchParkingAreas, 500), [fetchParkingAreas]);
 
