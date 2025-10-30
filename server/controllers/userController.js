@@ -1,6 +1,7 @@
 import ParkingArea from '../models/ParkingArea.js';
 import ParkingSlot from '../models/ParkingSlot.js';
 import Booking from '../models/Booking.js';
+import User from '../models/User.js';
 
 const getDistance = (lat1, lon1, lat2, lon2) => {
   const R = 6371;
