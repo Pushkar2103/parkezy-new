@@ -379,24 +379,49 @@ const UserDashboard = () => {
     );
 };
 
-const ParkingListCard = ({ area }) => (
-    <Link to={`/parking/${area._id}`} className="group flex items-center p-3 bg-white border rounded-lg hover:shadow-md hover:border-blue-500 cursor-pointer transition">
-        <img src={area.image || 'https://placehold.co/100x100/e2e8f0/4a5568?text=No+Img'} alt={area.name} className="w-20 h-20 rounded-md object-cover mr-4" />
-        <div className="flex-grow">
-            <h3 className="font-bold text-gray-800 group-hover:text-blue-600 transition">{area.name}</h3>
-            <div className="flex items-center text-sm text-gray-500 mt-1"><MapPinIcon /><span>{area.location.name}</span></div>
-            <div className="flex justify-between items-center mt-2 text-sm">
-                <span className={`font-bold px-2 py-1 rounded-full text-xs ${area.availableSlots > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{area.availableSlots} available</span>
-                <span className="text-gray-600 font-semibold">{area.distance ? `${area.distance.toFixed(1)} km away` : ''}</span>
+const ParkingListCard = ({ area, favorites, onToggleFavorite }) => {
+    const isFavorite = favorites.includes(area._id);
+
+    const handleFavoriteClick = async (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        await onToggleFavorite(area._id, isFavorite);
+    };
+
+    return (
+        <Link to={`/parking/${area._id}`} className="group relative flex items-center p-3 bg-white border rounded-lg hover:shadow-md hover:border-blue-500 cursor-pointer transition">
+            {/* Favorite Heart Icon */}
+            <button
+                onClick={handleFavoriteClick}
+                className="absolute top-2 right-2 z-10 p-2 rounded-full hover:bg-gray-100 transition"
+            >
+                <svg
+                    className={`w-6 h-6 ${isFavorite ? 'fill-red-500 text-red-500' : 'fill-none text-gray-400'} hover:text-red-500`}
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    viewBox="0 0 24 24"
+                >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12z" />
+                </svg>
+            </button>
+
+            <img src={area.image || 'https://placehold.co/100x100/e2e8f0/4a5568?text=No+Img'} alt={area.name} className="w-20 h-20 rounded-md object-cover mr-4" />
+            <div className="flex-grow">
+                <h3 className="font-bold text-gray-800 group-hover:text-blue-600 transition">{area.name}</h3>
+                <div className="flex items-center text-sm text-gray-500 mt-1"><MapPinIcon /><span>{area.location.name}</span></div>
+                <div className="flex justify-between items-center mt-2 text-sm">
+                    <span className={`font-bold px-2 py-1 rounded-full text-xs ${area.availableSlots > 0 ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>{area.availableSlots} available</span>
+                    <span className="text-gray-600 font-semibold">{area.distance ? `${area.distance.toFixed(1)} km away` : ''}</span>
+                </div>
+                <div className="mt-2">
+                    <span className="text-blue-600 font-bold text-sm">₹{area.pricePerHour}/hr</span>
+                    {area.evCharging && <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">⚡ EV</span>}
+                    {area.parkingType === 'covered' && <span className="ml-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">🏠 Covered</span>}
+                </div>
             </div>
-            <div className="mt-2">
-                <span className="text-blue-600 font-bold text-sm">₹{area.pricePerHour}/hr</span>
-                {area.evCharging && <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-1 rounded">⚡ EV</span>}
-                {area.parkingType === 'covered' && <span className="ml-1 text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">🏠 Covered</span>}
-            </div>
-        </div>
-        <ChevronRightIcon />
-    </Link>
-);
+            <ChevronRightIcon />
+        </Link>
+    );
+};
 
 export default UserDashboard;
