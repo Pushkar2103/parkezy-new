@@ -85,20 +85,23 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
         setToken(null);
         setRequestCount(0);
-        
+        setFavorites([]);
+
         localStorage.removeItem('parkezy_token');
         localStorage.removeItem('parkezy_user');
     };
 
-    const value = { 
-        user, 
+    const value = {
+        user,
         token,
-        login, 
-        logout, 
-        isAuthenticated: !!user, 
-        loading, 
-        requestCount, 
-        refreshRequestCount: fetchRequestCount 
+        login,
+        logout,
+        isAuthenticated: !!user,
+        loading,
+        requestCount,
+        refreshRequestCount: fetchRequestCount,
+        favorites,
+        refreshFavorites
     };
 
     return (
