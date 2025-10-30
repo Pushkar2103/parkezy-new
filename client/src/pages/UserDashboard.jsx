@@ -338,10 +338,17 @@ const UserDashboard = () => {
                     )}
 
                     <div className="overflow-y-auto flex-grow">
-                        {loading ? <ParkingListSkeleton /> : 
+                        {loading ? <ParkingListSkeleton /> :
                             parkingAreas.length > 0 ? (
                                 <div className="space-y-3">
-                                    {parkingAreas.map(area => <ParkingListCard key={area._id} area={area} />)}
+                                    {parkingAreas.map(area => (
+                                        <ParkingListCard
+                                            key={area._id}
+                                            area={area}
+                                            favorites={favorites}
+                                            onToggleFavorite={handleToggleFavorite}
+                                        />
+                                    ))}
                                 </div>
                             ) : (
                                 <p className="text-gray-500 text-center mt-10">No parking areas found in this vicinity. Try searching or moving the map.</p>
