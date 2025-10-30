@@ -63,10 +63,19 @@ apiService.deleteParkingArea = (id) =>
   apiService.delete(`/parking-areas/${id}`);
 apiService.getOwnerStats = () => apiService.get("/parking-areas/owner/stats");
 
-apiService.getParkingAreas = (searchTerm = "", lat, lng, radius = 10) => {
-  return apiService.get("/user/parking-areas", {
-    params: { search: searchTerm, lat, lng, radius },
-  });
+apiService.getParkingAreas = (searchTerm = "", lat, lng, filters = {}, radius = 10) => {
+  const params = { search: searchTerm, lat, lng, radius };
+
+  if (filters.minPrice) params.minPrice = filters.minPrice;
+  if (filters.maxPrice) params.maxPrice = filters.maxPrice;
+  if (filters.parkingType) params.parkingType = filters.parkingType;
+  if (filters.evCharging) params.evCharging = 'true';
+  if (filters.securityFeatures && filters.securityFeatures.length > 0) {
+    params.securityFeatures = filters.securityFeatures.join(',');
+  }
+  if (filters.vehicleType) params.vehicleType = filters.vehicleType;
+
+  return apiService.get("/user/parking-areas", { params });
 };
 apiService.getParkingAreaDetails = (areaId) =>
   apiService.get(`/user/parking-areas/${areaId}`);
