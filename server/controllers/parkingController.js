@@ -11,7 +11,11 @@ export const createParkingArea = async (req, res) => {
     city,
     pricePerHour,
     lat,
-    lng
+    lng,
+    parkingType,
+    evCharging,
+    securityFeatures,
+    vehicleTypes
   } = req.body;
   const ownerId = req.user._id;
 
@@ -19,6 +23,20 @@ export const createParkingArea = async (req, res) => {
 
   if (!name || !totalSlots || !locationName || !city || !lat || !lng) {
     return res.status(400).json({ message: 'Please provide all required fields, including coordinates from the map.' });
+  }
+
+  // Validate parkingType
+  if (parkingType && !['covered', 'open-air', 'mixed'].includes(parkingType)) {
+    return res.status(400).json({ message: 'Invalid parking type. Must be: covered, open-air, or mixed.' });
+  }
+
+  // Validate vehicleTypes
+  if (vehicleTypes && Array.isArray(vehicleTypes)) {
+    const validTypes = ['bike', 'car', 'compact-suv', 'full-suv', 'truck'];
+    const invalid = vehicleTypes.filter(type => !validTypes.includes(type));
+    if (invalid.length > 0) {
+      return res.status(400).json({ message: `Invalid vehicle types: ${invalid.join(', ')}` });
+    }
   }
 
   try {
@@ -35,14 +53,26 @@ export const createParkingArea = async (req, res) => {
       });
     }
 
-    const newParkingArea = await ParkingArea.create({
+    const parkingAreaData = {
       ownerId,
       locationId: location._id,
       name,
       totalSlots,
       pricePerHour: parseFloat(pricePerHour) || 0,
       image
-    });
+    };
+
+    // Add new fields if provided
+    if (parkingType) parkingAreaData.parkingType = parkingType;
+    if (typeof evCharging === 'boolean') parkingAreaData.evCharging = evCharging;
+    if (securityFeatures && typeof securityFeatures === 'object') {
+      parkingAreaData.securityFeatures = securityFeatures;
+    }
+    if (vehicleTypes && Array.isArray(vehicleTypes)) {
+      parkingAreaData.vehicleTypes = vehicleTypes;
+    }
+
+    const newParkingArea = await ParkingArea.create(parkingAreaData);
 
     const slots = [];
     for (let i = 1; i <= totalSlots; i++) {
