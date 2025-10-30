@@ -16,6 +16,11 @@ const userSchema = new mongoose.Schema({
   verificationToken: String,
   passwordResetToken: String,
   passwordResetExpires: Date,
+
+  favorites: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'ParkingArea'
+  }]
 }, { timestamps: true });
 
 userSchema.methods.createPasswordResetToken = function() {
