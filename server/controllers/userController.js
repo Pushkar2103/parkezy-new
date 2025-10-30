@@ -256,6 +256,110 @@ export const getSlotAvailability = async (req, res) => {
   }
 };
 
+export const addToFavorites = async (req, res) => {
+  try {
+    const { parkingAreaId } = req.params;
+    const userId = req.user._id;
+
+    // Validate parking area exists
+    const parkingArea = await ParkingArea.findById(parkingAreaId);
+    if (!parkingArea) {
+      return res.status(404).json({ message: 'Parking area not found' });
+    }
+
+    // Check if already in favorites
+    const user = await User.findById(userId);
+    if (user.favorites.includes(parkingAreaId)) {
+      return res.status(400).json({ message: 'Already in favorites' });
+    }
+
+    // Add to favorites
+    user.favorites.push(parkingAreaId);
+    await user.save();
+
+    res.status(200).json({ message: 'Added to favorites', favorites: user.favorites });
+  } catch (error) {
+    console.error("Error in addToFavorites:", error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+export const removeFromFavorites = async (req, res) => {
+  try {
+    const { parkingAreaId } = req.params;
+    const userId = req.user._id;
+
+    const user = await User.findById(userId);
+
+    // Check if in favorites
+    if (!user.favorites.includes(parkingAreaId)) {
+      return res.status(400).json({ message: 'Not in favorites' });
+    }
+
+    // Remove from favorites
+    user.favorites = user.favorites.filter(id => id.toString() !== parkingAreaId);
+    await user.save();
+
+    res.status(200).json({ message: 'Removed from favorites', favorites: user.favorites });
+  } catch (error) {
+    console.error("Error in removeFromFavorites:", error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
+export const getFavorites = async (req, res) => {
+  try {
+    const userId = req.user._id;
+
+    const user = await User.findById(userId).populate({
+      path: 'favorites',
+      populate: { path: 'locationId' }
+    });
+
+    if (!user || !user.favorites) {
+      return res.status(200).json([]);
+    }
+
+    // Augment with available slots and format for frontend
+    const augmentedFavorites = await Promise.all(user.favorites.map(async (area) => {
+      if (!area) return null; // Handle deleted parking areas
+
+      const availableSlots = await ParkingSlot.countDocuments({
+        areaId: area._id,
+        status: { $regex: /^available$/i }
+      });
+
+      const coords = area.locationId?.coordinates?.coordinates;
+      if (!coords) return null;
+
+      return {
+        _id: area._id,
+        name: area.name,
+        image: area.image,
+        totalSlots: area.totalSlots,
+        availableSlots,
+        pricePerHour: area.pricePerHour,
+        parkingType: area.parkingType,
+        evCharging: area.evCharging,
+        location: {
+          _id: area.locationId._id,
+          name: area.locationId.name,
+          city: area.locationId.city,
+          coordinates: {
+            lat: coords[1],
+            lng: coords[0]
+          }
+        }
+      };
+    }));
+
+    res.status(200).json(augmentedFavorites.filter(Boolean));
+  } catch (error) {
+    console.error("Error in getFavorites:", error);
+    res.status(500).json({ message: 'Server error', error: error.message });
+  }
+};
+
 setInterval(async () => {
   try {
     const tenMinutesAgo = new Date(Date.now() - 10 * 60 * 1000);
