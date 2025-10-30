@@ -61,10 +61,26 @@ const AddParkingPage = () => {
     const fileInputRef = useRef(null);
 
     const handleChange = (e) => {
-        const { name, value, files } = e.target;
+        const { name, value, files, type, checked } = e.target;
         if (name === 'parkingImage' && files[0]) {
             setFormData({ ...formData, parkingImage: files[0] });
             setPreview(URL.createObjectURL(files[0]));
+        } else if (type === 'checkbox' && name === 'evCharging') {
+            setFormData({ ...formData, evCharging: checked });
+        } else if (name.startsWith('security_')) {
+            const feature = name.replace('security_', '');
+            setFormData({
+                ...formData,
+                securityFeatures: {
+                    ...formData.securityFeatures,
+                    [feature]: checked
+                }
+            });
+        } else if (name === 'vehicleType') {
+            const vehicleTypes = formData.vehicleTypes.includes(value)
+                ? formData.vehicleTypes.filter(t => t !== value)
+                : [...formData.vehicleTypes, value];
+            setFormData({ ...formData, vehicleTypes });
         } else {
             setFormData({ ...formData, [name]: value });
         }
